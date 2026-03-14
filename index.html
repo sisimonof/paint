@@ -157,7 +157,7 @@
             filter: drop-shadow(0 4px 20px rgba(255,70,100,0.4));
         }
         #menuScreen .subtitle {
-            font-size: 18px; opacity: 0.5; margin-bottom: 50px; letter-spacing: 3px;
+            font-size: 18px; opacity: 0.5; margin-bottom: 40px; letter-spacing: 3px;
         }
         .menu-btn {
             padding: 18px 70px; font-size: 24px; font-family: 'Fredoka One', cursive;
@@ -171,10 +171,79 @@
             box-shadow: 0 4px 30px rgba(255,70,100,0.5);
         }
         #playBtn:hover { box-shadow: 0 6px 40px rgba(255,70,100,0.7); }
+        #onlineBtn {
+            background: linear-gradient(135deg, #32b4ff, #7dd3ff);
+            box-shadow: 0 4px 30px rgba(50,180,255,0.5);
+        }
+        #onlineBtn:hover { box-shadow: 0 6px 40px rgba(50,180,255,0.7); }
         .menu-controls {
-            margin-top: 40px; opacity: 0.4; font-size: 14px; text-align: center; line-height: 2;
+            margin-top: 30px; opacity: 0.4; font-size: 14px; text-align: center; line-height: 2;
         }
         .menu-controls span { opacity: 0.7; }
+
+        /* Online lobby */
+        #lobbyScreen {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: #0a0a1a;
+            background-image:
+                radial-gradient(ellipse at 50% 30%, rgba(50,180,255,0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 100%, rgba(100,50,200,0.12) 0%, transparent 40%);
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 20;
+        }
+        #lobbyScreen.visible { display: flex; }
+        #lobbyScreen h2 {
+            font-family: 'Fredoka One', cursive; font-size: 36px; margin-bottom: 30px;
+            color: #7dd3ff;
+        }
+        .lobby-section {
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 20px; padding: 30px 40px; margin-bottom: 20px; text-align: center;
+            min-width: 340px;
+        }
+        .lobby-section h3 {
+            font-family: 'Fredoka One', cursive; font-size: 20px; margin-bottom: 15px; opacity: 0.8;
+        }
+        .room-code {
+            font-family: 'Fredoka One', cursive; font-size: 52px; letter-spacing: 12px;
+            color: #ffdd00; text-shadow: 0 0 20px rgba(255,221,0,0.4);
+            margin: 10px 0;
+        }
+        .lobby-input {
+            font-family: 'Fredoka One', cursive; font-size: 32px; letter-spacing: 10px;
+            text-align: center; width: 200px; padding: 10px;
+            background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.15);
+            border-radius: 15px; color: white; outline: none; text-transform: uppercase;
+        }
+        .lobby-input:focus { border-color: rgba(50,180,255,0.5); box-shadow: 0 0 15px rgba(50,180,255,0.2); }
+        .lobby-input::placeholder { color: rgba(255,255,255,0.2); letter-spacing: 6px; font-size: 22px; }
+        .lobby-btn {
+            padding: 12px 40px; font-size: 18px; font-family: 'Fredoka One', cursive;
+            border: none; border-radius: 25px; color: #fff; cursor: pointer;
+            letter-spacing: 2px; transition: transform 0.2s, box-shadow 0.2s; margin-top: 12px;
+        }
+        .lobby-btn:hover { transform: scale(1.05); }
+        #createBtn {
+            background: linear-gradient(135deg, #ff4664, #ff8fa3);
+            box-shadow: 0 4px 20px rgba(255,70,100,0.4);
+        }
+        #joinBtn {
+            background: linear-gradient(135deg, #32b4ff, #7dd3ff);
+            box-shadow: 0 4px 20px rgba(50,180,255,0.4);
+        }
+        #lobbyBackBtn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            box-shadow: 0 4px 20px rgba(102,126,234,0.3);
+            margin-top: 20px;
+        }
+        .lobby-status {
+            font-size: 16px; margin-top: 12px; opacity: 0.6;
+        }
+        .lobby-error {
+            color: #ff5555; font-size: 14px; margin-top: 8px;
+        }
+        @keyframes dots { 0% { content: ''; } 33% { content: '.'; } 66% { content: '..'; } 100% { content: '...'; } }
+        .waiting::after { content: '...'; animation: dots 1.5s steps(4) infinite; }
 
         /* Game area hidden by default */
         #gameArea { display: none; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
@@ -185,12 +254,30 @@
     <!-- Menu -->
     <div id="menuScreen">
         <h1>Paint Battle</h1>
-        <p class="subtitle">1 vs 1 Local</p>
-        <button class="menu-btn" id="playBtn">JOUER</button>
+        <p class="subtitle">1 vs 1</p>
+        <button class="menu-btn" id="playBtn">LOCAL</button>
+        <button class="menu-btn" id="onlineBtn">EN LIGNE</button>
         <div class="menu-controls">
-            <span>Joueur 1 (Rouge)</span> : Z Q S D<br>
-            <span>Joueur 2 (Bleu)</span> : Fleches
+            <span>Deplacement</span> : Z Q S D / Fleches
         </div>
+    </div>
+
+    <!-- Online Lobby -->
+    <div id="lobbyScreen">
+        <h2>MODE EN LIGNE</h2>
+        <div class="lobby-section">
+            <h3>CREER UNE PARTIE</h3>
+            <button class="lobby-btn" id="createBtn">CREER</button>
+            <div id="createStatus"></div>
+        </div>
+        <div class="lobby-section">
+            <h3>REJOINDRE</h3>
+            <input class="lobby-input" id="codeInput" type="text" maxlength="4" placeholder="CODE">
+            <br>
+            <button class="lobby-btn" id="joinBtn">REJOINDRE</button>
+            <div class="lobby-error" id="joinError"></div>
+        </div>
+        <button class="lobby-btn" id="lobbyBackBtn">RETOUR</button>
     </div>
 
     <!-- Game -->
@@ -217,6 +304,7 @@
         <button id="restartBtn">REJOUER</button>
         <button id="menuBtn" class="menu-btn" style="background: linear-gradient(135deg, #667eea, #764ba2); box-shadow: 0 4px 25px rgba(102,126,234,0.4); font-size: 16px; padding: 12px 40px; margin-top: 5px;">MENU</button>
     </div>
+    <script src="/socket.io/socket.io.js"></script>
     <script>
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
@@ -257,11 +345,17 @@
 
     let players, keys, gameTime, gameOver, animId, bonuses, bonusTimer, particles, globalTime;
     const DURATION = 60;
-    const SPEED = 200; // pixels per second
-    const BRUSH = 54; // base brush radius in pixels
+    const SPEED = 200;
+    const BRUSH = 54;
     const BONUS_INTERVAL = 10;
     const MAX_BONUSES = 3;
     const BUFF_TIME = 5;
+
+    // Online mode
+    let onlineMode = false;
+    let myPlayerNum = 0; // 1 or 2
+    let isHost = false;
+    let socket = null;
 
     const BONUS_TYPES = [
         { id: 'speed',    icon: '\u26A1',       color: '#ffdd00', glow: '#ffee66', desc: 'VITESSE' },
@@ -308,6 +402,15 @@
         globalTime = 0;
         document.getElementById('endScreen').classList.remove('visible');
         document.getElementById('timer').classList.remove('warning');
+        document.getElementById('timer').textContent = DURATION;
+
+        if (onlineMode) {
+            document.getElementById('controls').textContent = myPlayerNum === 1
+                ? 'Vous (Rouge) : ZQSD / Fleches'
+                : 'Vous (Bleu) : ZQSD / Fleches';
+        } else {
+            document.getElementById('controls').textContent = 'J1 (Rouge) : ZQSD  \u2022  J2 (Bleu) : Fleches';
+        }
 
         players = [
             { x: 60, y: H / 2, color: 1, vx: 0, vy: 0, speedBoost: 0, frozen: 0, trail: 0, shrunk: 0, shield: 0, prevX: 60, prevY: H / 2 },
@@ -349,12 +452,10 @@
         }
     }
 
-    // Paint a circle on a layer and clear from the other
     function paintCircle(px, py, radius, playerColor) {
         const myLayer = playerColor === 1 ? lctx1 : lctx2;
         const otherLayer = playerColor === 1 ? lctx2 : lctx1;
 
-        // Draw on my layer with radial gradient for soft edges
         const grad = myLayer.createRadialGradient(px, py, 0, px, py, radius);
         grad.addColorStop(0, 'rgba(255,255,255,1)');
         grad.addColorStop(0.7, 'rgba(255,255,255,0.95)');
@@ -364,7 +465,6 @@
         myLayer.arc(px, py, radius, 0, Math.PI * 2);
         myLayer.fill();
 
-        // Erase from opponent layer
         otherLayer.globalCompositeOperation = 'destination-out';
         otherLayer.beginPath();
         otherLayer.arc(px, py, radius, 0, Math.PI * 2);
@@ -372,7 +472,6 @@
         otherLayer.fill();
         otherLayer.globalCompositeOperation = 'source-over';
 
-        // Update ownership grid
         const minR = Math.max(0, Math.floor((py - radius) / GS));
         const maxR = Math.min(GR - 1, Math.floor((py + radius) / GS));
         const minC = Math.max(0, Math.floor((px - radius) / GS));
@@ -410,18 +509,33 @@
                 }
             }
         }
-        // Repaint visually
         paintCircle(p.x, p.y, r, p.color);
         spawnParticles(p.x, p.y, '#ff8800', 25);
     }
 
-    function spawnBonus() {
-        if (bonuses.length >= MAX_BONUSES) return;
-        const type = BONUS_TYPES[Math.floor(Math.random() * BONUS_TYPES.length)];
-        const bx = 60 + Math.random() * (W - 120);
-        const by = 60 + Math.random() * (H - 120);
+    function spawnBonus(forceData) {
+        if (!forceData && bonuses.length >= MAX_BONUSES) return;
+        let bx, by, type;
+        if (forceData) {
+            bx = forceData.x * W; // positions normalized 0-1
+            by = forceData.y * H;
+            type = BONUS_TYPES[forceData.typeIdx];
+        } else {
+            type = BONUS_TYPES[Math.floor(Math.random() * BONUS_TYPES.length)];
+            bx = 60 + Math.random() * (W - 120);
+            by = 60 + Math.random() * (H - 120);
+        }
         bonuses.push({ x: bx, y: by, type, pulse: 0, spawnTime: globalTime });
         spawnParticles(bx, by, type.color, 12, { speed: 30, speedVar: 40, life: 0.6 });
+
+        // If online host, broadcast spawn
+        if (onlineMode && isHost && !forceData) {
+            socket.emit('bonus-spawn', {
+                x: bx / W,
+                y: by / H,
+                typeIdx: BONUS_TYPES.indexOf(type)
+            });
+        }
     }
 
     function loop() {
@@ -447,9 +561,58 @@
         animId = requestAnimationFrame(loop);
     }
 
+    function applyBonus(p, bonusId, bonusIdx) {
+        const opponent = players.find(o => o !== p);
+        const PR = 48;
+        const margin = PR;
+
+        switch (bonusId) {
+            case 'speed': p.speedBoost = BUFF_TIME; break;
+            case 'bomb': paintBomb(p); break;
+            case 'freeze':
+                if (opponent.shield > 0) {
+                    opponent.shield = 0;
+                    spawnParticles(opponent.x, opponent.y, '#44ee66', 15);
+                    showNotif('\uD83D\uDEE1\uFE0F BLOQUE !', '#44ee66');
+                } else {
+                    opponent.frozen = BUFF_TIME;
+                }
+                break;
+            case 'steal': stealZone(p); break;
+            case 'trail': p.trail = BUFF_TIME; break;
+            case 'shrink':
+                if (opponent.shield > 0) {
+                    opponent.shield = 0;
+                    spawnParticles(opponent.x, opponent.y, '#44ee66', 15);
+                    showNotif('\uD83D\uDEE1\uFE0F BLOQUE !', '#44ee66');
+                } else {
+                    opponent.shrunk = BUFF_TIME;
+                }
+                break;
+            case 'teleport':
+                spawnParticles(p.x, p.y, '#aa88ff', 20);
+                p.x = margin + Math.random() * (W - margin * 2);
+                p.y = margin + Math.random() * (H - margin * 2);
+                paintCircle(p.x, p.y, 50, p.color);
+                spawnParticles(p.x, p.y, '#aa88ff', 20);
+                break;
+            case 'shield': p.shield = BUFF_TIME * 2; break;
+        }
+
+        if (bonusIdx !== undefined && bonusIdx >= 0 && bonusIdx < bonuses.length) {
+            const b = bonuses[bonusIdx];
+            spawnParticles(b.x, b.y, b.type.color, 20, { speed: 50, speedVar: 70 });
+            showNotif(b.type.icon + '  ' + b.type.desc, b.type.color);
+            bonuses.splice(bonusIdx, 1);
+        }
+    }
+
     function update(dt) {
-        bonusTimer += dt;
-        if (bonusTimer >= BONUS_INTERVAL) { bonusTimer = 0; spawnBonus(); }
+        // Bonus spawning (only host in online, or always in local)
+        if (!onlineMode || isHost) {
+            bonusTimer += dt;
+            if (bonusTimer >= BONUS_INTERVAL) { bonusTimer = 0; spawnBonus(); }
+        }
 
         for (const b of bonuses) b.pulse += dt * 3;
 
@@ -461,36 +624,46 @@
             if (pt.life <= 0) particles.splice(i, 1);
         }
 
-        // Input
-        const p1 = players[0];
-        p1.vx = 0; p1.vy = 0;
-        if (keys['KeyA'] || keys['KeyQ']) p1.vx = -1;
-        if (keys['KeyD']) p1.vx = 1;
-        if (keys['KeyW'] || keys['KeyZ']) p1.vy = -1;
-        if (keys['KeyS']) p1.vy = 1;
+        const PR = 48;
 
-        const p2 = players[1];
-        p2.vx = 0; p2.vy = 0;
-        if (keys['ArrowLeft']) p2.vx = -1;
-        if (keys['ArrowRight']) p2.vx = 1;
-        if (keys['ArrowUp']) p2.vy = -1;
-        if (keys['ArrowDown']) p2.vy = 1;
+        if (onlineMode) {
+            // In online mode, control only my player using both ZQSD and arrows
+            const me = players[myPlayerNum - 1];
+            me.vx = 0; me.vy = 0;
+            if (keys['KeyA'] || keys['KeyQ'] || keys['ArrowLeft']) me.vx = -1;
+            if (keys['KeyD'] || keys['ArrowRight']) me.vx = 1;
+            if (keys['KeyW'] || keys['KeyZ'] || keys['ArrowUp']) me.vy = -1;
+            if (keys['KeyS'] || keys['ArrowDown']) me.vy = 1;
+        } else {
+            // Local: P1 = ZQSD, P2 = arrows
+            const p1 = players[0];
+            p1.vx = 0; p1.vy = 0;
+            if (keys['KeyA'] || keys['KeyQ']) p1.vx = -1;
+            if (keys['KeyD']) p1.vx = 1;
+            if (keys['KeyW'] || keys['KeyZ']) p1.vy = -1;
+            if (keys['KeyS']) p1.vy = 1;
 
-        const PR = 48; // player collision radius
+            const p2 = players[1];
+            p2.vx = 0; p2.vy = 0;
+            if (keys['ArrowLeft']) p2.vx = -1;
+            if (keys['ArrowRight']) p2.vx = 1;
+            if (keys['ArrowUp']) p2.vy = -1;
+            if (keys['ArrowDown']) p2.vy = 1;
+        }
 
         for (const p of players) {
-            // Timers
             if (p.speedBoost > 0) p.speedBoost -= dt;
             if (p.frozen > 0) p.frozen -= dt;
             if (p.trail > 0) p.trail -= dt;
             if (p.shrunk > 0) p.shrunk -= dt;
             if (p.shield > 0) p.shield -= dt;
 
-            // Normalize diagonal
+            // In online mode, skip physics for the remote player (we receive their position)
+            if (onlineMode && p.color !== myPlayerNum) continue;
+
             const len = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
             if (len > 0) { p.vx /= len; p.vy /= len; }
 
-            // Speed
             let spd = SPEED;
             if (p.speedBoost > 0) spd *= 1.9;
             if (p.frozen > 0) spd *= 0.3;
@@ -500,17 +673,17 @@
             p.x += p.vx * spd * dt;
             p.y += p.vy * spd * dt;
 
-            // Clamp with margin
             const margin = PR;
             p.x = Math.max(margin, Math.min(W - margin, p.x));
             p.y = Math.max(margin, Math.min(H - margin, p.y));
+        }
 
-            // Paint brush
+        // Paint for all players
+        for (const p of players) {
             let radius = BRUSH;
             if (p.trail > 0) radius = 126;
             if (p.shrunk > 0) radius = 18;
 
-            // Paint along movement path
             const pdx = p.x - p.prevX;
             const pdy = p.y - p.prevY;
             const dist = Math.sqrt(pdx * pdx + pdy * pdy);
@@ -520,7 +693,7 @@
                 paintCircle(p.prevX + pdx * t, p.prevY + pdy * t, radius, p.color);
             }
 
-            // Effect particles
+            const len = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
             const moving = len > 0;
             if (p.trail > 0 && moving && Math.random() < 0.5)
                 spawnParticles(p.x, p.y, p.color === 1 ? COLOR1_L : COLOR2_L, 1, { speed: 15, speedVar: 20, life: 0.3, size: 2, sizeVar: 3 });
@@ -528,79 +701,75 @@
                 spawnParticles(p.x - p.vx * 10, p.y - p.vy * 10, '#ffdd00', 1, { speed: 10, speedVar: 15, life: 0.2, size: 1, sizeVar: 2 });
             if (p.frozen > 0 && Math.random() < 0.15)
                 spawnParticles(p.x, p.y, '#aaeeff', 1, { speed: 10, speedVar: 15, life: 0.5, size: 1, sizeVar: 2 });
+        }
 
-            // Bonus pickup
-            const opponent = players.find(o => o !== p);
+        // Bonus pickup - only for my player in online mode, both in local
+        for (const p of players) {
+            if (onlineMode && p.color !== myPlayerNum) continue;
+
             for (let i = bonuses.length - 1; i >= 0; i--) {
                 const b = bonuses[i];
                 const ddx = p.x - b.x, ddy = p.y - b.y;
                 if (ddx * ddx + ddy * ddy < 70 * 70) {
-                    spawnParticles(b.x, b.y, b.type.color, 20, { speed: 50, speedVar: 70 });
-                    showNotif(b.type.icon + '  ' + b.type.desc, b.type.color);
-                    switch (b.type.id) {
-                        case 'speed': p.speedBoost = BUFF_TIME; break;
-                        case 'bomb': paintBomb(p); break;
-                        case 'freeze':
-                            if (opponent.shield > 0) {
-                                opponent.shield = 0;
-                                spawnParticles(opponent.x, opponent.y, '#44ee66', 15);
-                                showNotif('\uD83D\uDEE1\uFE0F BLOQUE !', '#44ee66');
-                            } else {
-                                opponent.frozen = BUFF_TIME;
-                            }
-                            break;
-                        case 'steal': stealZone(p); break;
-                        case 'trail': p.trail = BUFF_TIME; break;
-                        case 'shrink':
-                            if (opponent.shield > 0) {
-                                opponent.shield = 0;
-                                spawnParticles(opponent.x, opponent.y, '#44ee66', 15);
-                                showNotif('\uD83D\uDEE1\uFE0F BLOQUE !', '#44ee66');
-                            } else {
-                                opponent.shrunk = BUFF_TIME;
-                            }
-                            break;
-                        case 'teleport':
-                            spawnParticles(p.x, p.y, '#aa88ff', 20);
-                            p.x = margin + Math.random() * (W - margin * 2);
-                            p.y = margin + Math.random() * (H - margin * 2);
-                            paintCircle(p.x, p.y, 50, p.color);
-                            spawnParticles(p.x, p.y, '#aa88ff', 20);
-                            break;
-                        case 'shield': p.shield = BUFF_TIME * 2; break;
+                    const bonusId = b.type.id;
+                    applyBonus(p, bonusId, i);
+
+                    if (onlineMode) {
+                        socket.emit('bonus-pickup', {
+                            playerNum: myPlayerNum,
+                            bonusId,
+                            bonusIdx: i,
+                            px: p.x / W,
+                            py: p.y / H
+                        });
                     }
-                    bonuses.splice(i, 1);
+                    break;
                 }
             }
         }
 
-        // Player collision - bounce off each other
-        const p1c = players[0], p2c = players[1];
-        const cdx = p2c.x - p1c.x;
-        const cdy = p2c.y - p1c.y;
-        const cdist = Math.sqrt(cdx * cdx + cdy * cdy);
-        const minDist = PR * 2;
-        if (cdist < minDist && cdist > 0) {
-            // Push apart
-            const overlap = minDist - cdist;
-            const nx = cdx / cdist;
-            const ny = cdy / cdist;
-            const push = overlap / 2 + 1;
-            p1c.x -= nx * push;
-            p1c.y -= ny * push;
-            p2c.x += nx * push;
-            p2c.y += ny * push;
+        // Player collision
+        if (!onlineMode) {
+            const p1c = players[0], p2c = players[1];
+            const cdx = p2c.x - p1c.x;
+            const cdy = p2c.y - p1c.y;
+            const cdist = Math.sqrt(cdx * cdx + cdy * cdy);
+            const minDist = PR * 2;
+            if (cdist < minDist && cdist > 0) {
+                const overlap = minDist - cdist;
+                const nx = cdx / cdist;
+                const ny = cdy / cdist;
+                const push = overlap / 2 + 1;
+                p1c.x -= nx * push;
+                p1c.y -= ny * push;
+                p2c.x += nx * push;
+                p2c.y += ny * push;
 
-            // Re-clamp
-            p1c.x = Math.max(PR, Math.min(W - PR, p1c.x));
-            p1c.y = Math.max(PR, Math.min(H - PR, p1c.y));
-            p2c.x = Math.max(PR, Math.min(W - PR, p2c.x));
-            p2c.y = Math.max(PR, Math.min(H - PR, p2c.y));
+                p1c.x = Math.max(PR, Math.min(W - PR, p1c.x));
+                p1c.y = Math.max(PR, Math.min(H - PR, p1c.y));
+                p2c.x = Math.max(PR, Math.min(W - PR, p2c.x));
+                p2c.y = Math.max(PR, Math.min(H - PR, p2c.y));
 
-            // Collision particles
-            const mx = (p1c.x + p2c.x) / 2;
-            const my = (p1c.y + p2c.y) / 2;
-            spawnParticles(mx, my, '#fff', 6, { speed: 30, speedVar: 30, life: 0.2, size: 1, sizeVar: 2 });
+                const mx = (p1c.x + p2c.x) / 2;
+                const my = (p1c.y + p2c.y) / 2;
+                spawnParticles(mx, my, '#fff', 6, { speed: 30, speedVar: 30, life: 0.2, size: 1, sizeVar: 2 });
+            }
+        }
+
+        // Send position in online mode
+        if (onlineMode && socket) {
+            const me = players[myPlayerNum - 1];
+            socket.emit('pos', {
+                x: me.x / W,
+                y: me.y / H,
+                vx: me.vx,
+                vy: me.vy,
+                speedBoost: me.speedBoost,
+                frozen: me.frozen,
+                trail: me.trail,
+                shrunk: me.shrunk,
+                shield: me.shield
+            });
         }
 
         // Scores
@@ -630,11 +799,8 @@
     }
 
     function draw() {
-        // Background
         ctx.drawImage(bgCanvas, 0, 0);
 
-        // Paint layers - rendered with color tinting
-        // Player 1 paint (red tint)
         ctx.save();
         ctx.globalAlpha = 0.85;
         ctx.drawImage(layer1, 0, 0);
@@ -643,18 +809,10 @@
         ctx.fillRect(0, 0, W, H);
         ctx.restore();
 
-        // We need to composite properly. Use temp approach:
-        // Draw layer1 as alpha mask, fill with red
-        // Draw layer2 as alpha mask, fill with blue
-
-        // Clear and redraw properly
         ctx.drawImage(bgCanvas, 0, 0);
 
-        // Layer 1: red paint
         ctx.save();
         ctx.globalCompositeOperation = 'source-over';
-        // Draw the white layer, then tint it
-        // We'll use a trick: draw to main, then multiply with color
         drawColoredLayer(lctx1, layer1, ['#ff8fa3', '#ff7088', '#ffa0b3'], 1);
         drawColoredLayer(lctx2, layer2, ['#7dd3ff', '#68c4f0', '#92dfff'], 2);
         ctx.restore();
@@ -682,34 +840,28 @@
             ctx.translate(b.x, b.y + fy);
             ctx.scale(sc, sc);
 
-            // Glow ring
             ctx.globalAlpha = 0.15 + Math.sin(b.pulse * 1.5) * 0.08;
             ctx.strokeStyle = b.type.color;
             ctx.lineWidth = 1.5;
             ctx.beginPath(); ctx.arc(0, 0, r + 12, 0, Math.PI * 2); ctx.stroke();
             ctx.globalAlpha = 1;
 
-            // Radial glow
             const gg = ctx.createRadialGradient(0, 0, 0, 0, 0, r + 18);
             gg.addColorStop(0, b.type.glow + '55');
             gg.addColorStop(0.6, b.type.glow + '18');
             gg.addColorStop(1, b.type.glow + '00');
             ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(0, 0, r + 18, 0, Math.PI * 2); ctx.fill();
 
-            // Circle
             const cg = ctx.createRadialGradient(-r * 0.25, -r * 0.25, 0, 0, 0, r);
             cg.addColorStop(0, b.type.glow); cg.addColorStop(0.7, b.type.color); cg.addColorStop(1, b.type.color + 'cc');
             ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
 
-            // Gloss
             ctx.fillStyle = 'rgba(255,255,255,0.25)';
             ctx.beginPath(); ctx.ellipse(-r * 0.15, -r * 0.3, r * 0.5, r * 0.25, -0.3, 0, Math.PI * 2); ctx.fill();
 
-            // Border
             ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 2;
             ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
 
-            // Icon
             ctx.font = `${Math.round(r * 1.1)}px Arial`;
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             ctx.fillText(b.type.icon, 0, 2);
@@ -727,7 +879,6 @@
 
             ctx.save();
 
-            // Squash/stretch
             const dx = p.x - (p.prevX || p.x);
             const dy = p.y - (p.prevY || p.y);
             const ms = Math.sqrt(dx * dx + dy * dy);
@@ -738,7 +889,6 @@
             ctx.translate(p.x, p.y);
             if (ms > 0.5) { ctx.rotate(ma); ctx.scale(stretch, squash); ctx.rotate(-ma); }
 
-            // Speed aura
             if (p.speedBoost > 0) {
                 ctx.strokeStyle = 'rgba(255,221,0,0.5)'; ctx.lineWidth = 3;
                 ctx.setLineDash([6, 4]); ctx.lineDashOffset = globalTime * 40;
@@ -776,25 +926,20 @@
                 }
             }
 
-            // Shadow
             ctx.fillStyle = 'rgba(0,0,0,0.4)';
             ctx.beginPath(); ctx.ellipse(3, 5, PR * 0.9, PR * 0.5, 0, 0, Math.PI * 2); ctx.fill();
 
-            // Body
             const bg = ctx.createRadialGradient(-PR * 0.25, -PR * 0.25, 0, 0, 0, PR);
             if (p.frozen > 0) { bg.addColorStop(0, '#b8ddf0'); bg.addColorStop(1, '#5a99bb'); }
             else { bg.addColorStop(0, colL); bg.addColorStop(1, colD); }
             ctx.fillStyle = bg; ctx.beginPath(); ctx.arc(0, 0, PR, 0, Math.PI * 2); ctx.fill();
 
-            // Gloss
             ctx.fillStyle = 'rgba(255,255,255,0.2)';
             ctx.beginPath(); ctx.ellipse(-PR * 0.2, -PR * 0.35, PR * 0.45, PR * 0.2, -0.4, 0, Math.PI * 2); ctx.fill();
 
-            // Border
             ctx.strokeStyle = 'rgba(255,255,255,0.75)'; ctx.lineWidth = 2.5;
             ctx.beginPath(); ctx.arc(0, 0, PR, 0, Math.PI * 2); ctx.stroke();
 
-            // Eyes
             const ex = (p.vx > 0 ? 6 : p.vx < 0 ? -6 : 0);
             const ey = (p.vy > 0 ? 4.5 : p.vy < 0 ? -4.5 : 0);
             ctx.fillStyle = '#fff';
@@ -810,7 +955,6 @@
             ctx.beginPath(); ctx.arc(-16.5 + ex * 0.3, -10.5, 4.5, 0, Math.PI * 2); ctx.fill();
             ctx.beginPath(); ctx.arc(13.5 + ex * 0.3, -10.5, 4.5, 0, Math.PI * 2); ctx.fill();
 
-            // Mouth
             if (p.frozen > 0) {
                 ctx.strokeStyle = '#445566'; ctx.lineWidth = 4;
                 ctx.beginPath(); ctx.moveTo(-9, 15);
@@ -823,30 +967,24 @@
                 ctx.beginPath(); ctx.ellipse(1.5, 13.5, 6, 3.6, 0, 0, Math.PI * 2); ctx.fill();
             }
 
-            // Label
             ctx.font = 'bold 20px Nunito, Arial'; ctx.textAlign = 'center';
             ctx.fillStyle = 'rgba(255,255,255,0.7)';
-            ctx.fillText(isP1 ? 'J1' : 'J2', 0, -PR - 8);
+            let label = isP1 ? 'J1' : 'J2';
+            if (onlineMode && p.color === myPlayerNum) label = 'MOI';
+            ctx.fillText(label, 0, -PR - 8);
 
             ctx.restore();
         }
 
-        // Vignette
         const vig = ctx.createRadialGradient(W / 2, H / 2, W * 0.3, W / 2, H / 2, W * 0.7);
         vig.addColorStop(0, 'rgba(0,0,0,0)'); vig.addColorStop(1, 'rgba(0,0,0,0.2)');
         ctx.fillStyle = vig; ctx.fillRect(0, 0, W, H);
     }
 
-    // Draw a paint layer with color tinting
-
     function drawColoredLayer(layerCtx, layerCanvas, colors, playerNum) {
         tintCtx.clearRect(0, 0, W, H);
-
-        // Draw the white alpha mask
         tintCtx.globalCompositeOperation = 'source-over';
         tintCtx.drawImage(layerCanvas, 0, 0);
-
-        // Tint it with color using source-in
         tintCtx.globalCompositeOperation = 'source-in';
         const g = tintCtx.createLinearGradient(0, 0, W, H);
         g.addColorStop(0, colors[0]);
@@ -854,9 +992,7 @@
         g.addColorStop(1, colors[2]);
         tintCtx.fillStyle = g;
         tintCtx.fillRect(0, 0, W, H);
-
         tintCtx.globalCompositeOperation = 'source-over';
-
         ctx.drawImage(tintCanvas, 0, 0);
     }
 
@@ -873,9 +1009,21 @@
         const p2 = (c2 / total) * 100;
 
         let winner, wc;
-        if (c1 > c2) { winner = 'JOUEUR 1 GAGNE !'; wc = COLOR1; }
-        else if (c2 > c1) { winner = 'JOUEUR 2 GAGNE !'; wc = COLOR2; }
-        else { winner = 'EGALITE !'; wc = '#fff'; }
+        if (onlineMode) {
+            if (c1 > c2) {
+                winner = myPlayerNum === 1 ? 'VICTOIRE !' : 'DEFAITE...';
+                wc = COLOR1;
+            } else if (c2 > c1) {
+                winner = myPlayerNum === 2 ? 'VICTOIRE !' : 'DEFAITE...';
+                wc = COLOR2;
+            } else {
+                winner = 'EGALITE !'; wc = '#fff';
+            }
+        } else {
+            if (c1 > c2) { winner = 'JOUEUR 1 GAGNE !'; wc = COLOR1; }
+            else if (c2 > c1) { winner = 'JOUEUR 2 GAGNE !'; wc = COLOR2; }
+            else { winner = 'EGALITE !'; wc = '#fff'; }
+        }
 
         document.getElementById('winnerText').textContent = winner;
         document.getElementById('winnerText').style.color = wc;
@@ -883,6 +1031,9 @@
         document.getElementById('bf1').style.width = p1 + '%';
         document.getElementById('bf2').style.width = p2 + '%';
         document.getElementById('endScreen').classList.add('visible');
+
+        // Hide restart in online (can't restart easily)
+        document.getElementById('restartBtn').style.display = onlineMode ? 'none' : '';
     }
 
     document.addEventListener('keydown', e => {
@@ -892,7 +1043,10 @@
     document.addEventListener('keyup', e => { keys[e.code] = false; });
     document.getElementById('restartBtn').addEventListener('click', init);
 
-    function startGame() {
+    // ---- Navigation ----
+
+    function startLocalGame() {
+        onlineMode = false;
         document.getElementById('menuScreen').classList.add('hidden');
         document.getElementById('gameArea').classList.add('visible');
         init();
@@ -901,13 +1055,109 @@
     function goToMenu() {
         if (animId) cancelAnimationFrame(animId);
         animId = null;
+        onlineMode = false;
+        if (socket) { socket.disconnect(); socket = null; }
         document.getElementById('endScreen').classList.remove('visible');
         document.getElementById('gameArea').classList.remove('visible');
+        document.getElementById('lobbyScreen').classList.remove('visible');
         document.getElementById('menuScreen').classList.remove('hidden');
+        document.getElementById('createStatus').innerHTML = '';
+        document.getElementById('joinError').textContent = '';
+        document.getElementById('codeInput').value = '';
     }
 
-    document.getElementById('playBtn').addEventListener('click', startGame);
+    function showLobby() {
+        document.getElementById('menuScreen').classList.add('hidden');
+        document.getElementById('lobbyScreen').classList.add('visible');
+        connectSocket();
+    }
+
+    // ---- Online ----
+
+    function connectSocket() {
+        if (socket) return;
+        const url = window.location.origin;
+        socket = io(url);
+
+        socket.on('room-created', (code) => {
+            myPlayerNum = 1;
+            isHost = true;
+            document.getElementById('createStatus').innerHTML =
+                `<div class="room-code">${code}</div><p class="lobby-status waiting">En attente d'un adversaire</p>`;
+        });
+
+        socket.on('room-joined', (code) => {
+            myPlayerNum = 2;
+            isHost = false;
+        });
+
+        socket.on('join-error', (msg) => {
+            document.getElementById('joinError').textContent = msg;
+        });
+
+        socket.on('game-start', () => {
+            onlineMode = true;
+            document.getElementById('lobbyScreen').classList.remove('visible');
+            document.getElementById('gameArea').classList.add('visible');
+            init();
+        });
+
+        socket.on('pos', (data) => {
+            if (!players) return;
+            const other = players[myPlayerNum === 1 ? 1 : 0];
+            other.prevX = other.x;
+            other.prevY = other.y;
+            other.x = data.x * W;
+            other.y = data.y * H;
+            other.vx = data.vx;
+            other.vy = data.vy;
+            other.speedBoost = data.speedBoost;
+            other.frozen = data.frozen;
+            other.trail = data.trail;
+            other.shrunk = data.shrunk;
+            other.shield = data.shield;
+        });
+
+        socket.on('bonus-spawn', (data) => {
+            spawnBonus(data);
+        });
+
+        socket.on('bonus-pickup', (data) => {
+            if (!players) return;
+            const p = players[data.playerNum - 1];
+            applyBonus(p, data.bonusId, data.bonusIdx);
+        });
+
+        socket.on('opponent-left', () => {
+            showNotif('Adversaire deconnecte', '#ff5555');
+            setTimeout(goToMenu, 2000);
+        });
+    }
+
+    // ---- Event listeners ----
+
+    document.getElementById('playBtn').addEventListener('click', startLocalGame);
+    document.getElementById('onlineBtn').addEventListener('click', showLobby);
     document.getElementById('menuBtn').addEventListener('click', goToMenu);
+    document.getElementById('lobbyBackBtn').addEventListener('click', goToMenu);
+
+    document.getElementById('createBtn').addEventListener('click', () => {
+        if (socket) socket.emit('create-room');
+    });
+
+    document.getElementById('joinBtn').addEventListener('click', () => {
+        const code = document.getElementById('codeInput').value.trim().toUpperCase();
+        if (code.length !== 4) {
+            document.getElementById('joinError').textContent = 'Entrez un code a 4 caracteres';
+            return;
+        }
+        document.getElementById('joinError').textContent = '';
+        if (socket) socket.emit('join-room', code);
+    });
+
+    document.getElementById('codeInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') document.getElementById('joinBtn').click();
+    });
     </script>
 </body>
 </html>
