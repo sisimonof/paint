@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Paint Battle</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;900&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0a1a;
+            background-image:
+                radial-gradient(ellipse at 20% 50%, rgba(255,70,100,0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 50%, rgba(50,180,255,0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 100%, rgba(100,50,200,0.1) 0%, transparent 40%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-family: 'Nunito', 'Segoe UI', Arial, sans-serif;
+            color: white;
+            overflow: hidden;
+            user-select: none;
+        }
+        h1#title {
+            font-family: 'Fredoka One', cursive;
+            font-size: 42px;
+            letter-spacing: 4px;
+            margin-bottom: 6px;
+            background: linear-gradient(90deg, #ff4664 0%, #ff8fa3 25%, #fff 50%, #7dd3ff 75%, #32b4ff 100%);
+            background-size: 200% 100%;
+            animation: title-shimmer 4s ease-in-out infinite;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            filter: drop-shadow(0 2px 10px rgba(255,70,100,0.3));
+        }
+        @keyframes title-shimmer {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        #header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 6px;
+        }
+        .score {
+            font-size: 18px;
+            font-weight: 900;
+            padding: 5px 16px;
+            border-radius: 25px;
+            min-width: 110px;
+            text-align: center;
+            backdrop-filter: blur(8px);
+        }
+        #score1 {
+            background: linear-gradient(135deg, rgba(255,70,100,0.35), rgba(255,70,100,0.1));
+            color: #ff6b88;
+            border: 2px solid rgba(255,70,100,0.35);
+            box-shadow: 0 0 20px rgba(255,70,100,0.15), inset 0 0 15px rgba(255,70,100,0.05);
+        }
+        #score2 {
+            background: linear-gradient(135deg, rgba(50,180,255,0.35), rgba(50,180,255,0.1));
+            color: #66ccff;
+            border: 2px solid rgba(50,180,255,0.35);
+            box-shadow: 0 0 20px rgba(50,180,255,0.15), inset 0 0 15px rgba(50,180,255,0.05);
+        }
+        .effect-icons { display: inline-flex; gap: 2px; margin-left: 4px; font-size: 13px; }
+        #timer {
+            font-family: 'Fredoka One', cursive;
+            font-size: 34px;
+            background: rgba(255,255,255,0.06);
+            padding: 2px 22px;
+            border-radius: 15px;
+            border: 2px solid rgba(255,255,255,0.1);
+            min-width: 80px;
+            text-align: center;
+            text-shadow: 0 0 15px rgba(255,255,255,0.2);
+        }
+        #timer.warning { color: #ff5555; animation: pulse-timer 0.5s infinite alternate; text-shadow: 0 0 20px rgba(255,85,85,0.5); }
+        @keyframes pulse-timer { to { transform: scale(1.08); } }
+        #bar-container {
+            width: calc(100vw - 20px); height: 8px; border-radius: 4px; overflow: hidden;
+            margin-bottom: 5px; display: flex; background: rgba(255,255,255,0.06);
+        }
+        #bar1 { height: 100%; background: linear-gradient(90deg, #ff4664, #ff8fa3); transition: width 0.3s; box-shadow: 0 0 10px rgba(255,70,100,0.4); border-radius: 4px 0 0 4px; }
+        #barNeutral { height: 100%; flex: 1; }
+        #bar2 { height: 100%; background: linear-gradient(270deg, #32b4ff, #7dd3ff); transition: width 0.3s; box-shadow: 0 0 10px rgba(50,180,255,0.4); border-radius: 0 4px 4px 0; }
+        #game-wrapper { position: relative; border-radius: 10px; overflow: hidden; }
+        #game-wrapper::before {
+            content: ''; position: absolute; inset: -2px; border-radius: 12px;
+            background: linear-gradient(135deg, rgba(255,70,100,0.3), rgba(100,50,200,0.2), rgba(50,180,255,0.3));
+            z-index: -1; filter: blur(1px);
+        }
+        canvas { display: block; border-radius: 10px; }
+        #controls { margin-top: 8px; font-size: 12px; opacity: 0.35; text-align: center; letter-spacing: 1px; }
+        #bonus-notif {
+            position: fixed; top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            font-family: 'Fredoka One', cursive; font-size: 30px;
+            pointer-events: none; opacity: 0;
+            transition: opacity 0.25s, transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-shadow: 0 2px 20px rgba(0,0,0,0.9), 0 0 40px currentColor;
+            z-index: 5; letter-spacing: 2px;
+        }
+        #bonus-notif.show { opacity: 1; transform: translate(-50%, -55%) scale(1); }
+        #endScreen {
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(5,5,15,0.9); backdrop-filter: blur(15px);
+            flex-direction: column; align-items: center; justify-content: center; z-index: 10;
+        }
+        #endScreen.visible { display: flex; animation: fadeIn 0.5s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        #endScreen h1 {
+            font-family: 'Fredoka One', cursive; font-size: 56px; margin-bottom: 12px;
+            text-shadow: 0 0 40px currentColor, 0 0 80px currentColor;
+            animation: winner-glow 2s ease-in-out infinite alternate;
+        }
+        @keyframes winner-glow { from { filter: brightness(1); } to { filter: brightness(1.3); } }
+        #endScreen p { font-size: 20px; margin-bottom: 8px; opacity: 0.7; }
+        #endScreen .bar-final {
+            width: 400px; height: 14px; border-radius: 7px; overflow: hidden;
+            display: flex; margin-bottom: 25px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1);
+        }
+        .bar-final .bf1 { height: 100%; background: linear-gradient(90deg, #ff4664, #ff8fa3); transition: width 1.5s; }
+        .bar-final .bf2 { height: 100%; background: linear-gradient(270deg, #32b4ff, #7dd3ff); transition: width 1.5s; }
+        #restartBtn {
+            padding: 14px 55px; font-size: 20px; font-family: 'Fredoka One', cursive;
+            border: none; border-radius: 30px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff; cursor: pointer; letter-spacing: 2px;
+            box-shadow: 0 4px 25px rgba(102,126,234,0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        #restartBtn:hover { transform: scale(1.08); box-shadow: 0 6px 35px rgba(102,126,234,0.6); }
+        #restartBtn:active { transform: scale(0.98); }
+
+        /* Menu */
+        #menuScreen {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: #0a0a1a;
+            background-image:
+                radial-gradient(ellipse at 20% 50%, rgba(255,70,100,0.12) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 50%, rgba(50,180,255,0.12) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 100%, rgba(100,50,200,0.15) 0%, transparent 40%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 20;
+        }
+        #menuScreen.hidden { display: none; }
+        #menuScreen h1 {
+            font-family: 'Fredoka One', cursive; font-size: 72px; letter-spacing: 6px;
+            background: linear-gradient(90deg, #ff4664 0%, #ff8fa3 25%, #fff 50%, #7dd3ff 75%, #32b4ff 100%);
+            background-size: 200% 100%; animation: title-shimmer 4s ease-in-out infinite;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            text-transform: uppercase; margin-bottom: 20px;
+            filter: drop-shadow(0 4px 20px rgba(255,70,100,0.4));
+        }
+        #menuScreen .subtitle {
+            font-size: 18px; opacity: 0.5; margin-bottom: 50px; letter-spacing: 3px;
+        }
+        .menu-btn {
+            padding: 18px 70px; font-size: 24px; font-family: 'Fredoka One', cursive;
+            border: none; border-radius: 35px; color: #fff; cursor: pointer;
+            letter-spacing: 3px; transition: transform 0.2s, box-shadow 0.2s; margin-bottom: 15px;
+        }
+        .menu-btn:hover { transform: scale(1.08); }
+        .menu-btn:active { transform: scale(0.98); }
+        #playBtn {
+            background: linear-gradient(135deg, #ff4664, #ff8fa3);
+            box-shadow: 0 4px 30px rgba(255,70,100,0.5);
+        }
+        #playBtn:hover { box-shadow: 0 6px 40px rgba(255,70,100,0.7); }
+        .menu-controls {
+            margin-top: 40px; opacity: 0.4; font-size: 14px; text-align: center; line-height: 2;
+        }
+        .menu-controls span { opacity: 0.7; }
+
+        /* Game area hidden by default */
+        #gameArea { display: none; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
+        #gameArea.visible { display: flex; }
+    </style>
+</head>
+<body>
+    <!-- Menu -->
+    <div id="menuScreen">
+        <h1>Paint Battle</h1>
+        <p class="subtitle">1 vs 1 Local</p>
+        <button class="menu-btn" id="playBtn">JOUER</button>
+        <div class="menu-controls">
+            <span>Joueur 1 (Rouge)</span> : Z Q S D<br>
+            <span>Joueur 2 (Bleu)</span> : Fleches
+        </div>
+    </div>
+
+    <!-- Game -->
+    <div id="gameArea">
+        <h1 id="title">Paint Battle</h1>
+        <div id="header">
+            <div class="score" id="score1">J1: 0%<span class="effect-icons" id="fx1"></span></div>
+            <div id="timer">60</div>
+            <div class="score" id="score2">J2: 0%<span class="effect-icons" id="fx2"></span></div>
+        </div>
+        <div id="bar-container">
+            <div id="bar1" style="width:0%"></div>
+            <div id="barNeutral"></div>
+            <div id="bar2" style="width:0%"></div>
+        </div>
+        <div id="game-wrapper"><canvas id="game"></canvas></div>
+        <div id="controls">J1 (Rouge) : ZQSD &nbsp;&bull;&nbsp; J2 (Bleu) : Fleches</div>
+        <div id="bonus-notif"></div>
+    </div>
+    <div id="endScreen">
+        <h1 id="winnerText"></h1>
+        <p id="finalScore"></p>
+        <div class="bar-final"><div class="bf1" id="bf1"></div><div class="bf2" id="bf2"></div></div>
+        <button id="restartBtn">REJOUER</button>
+        <button id="menuBtn" class="menu-btn" style="background: linear-gradient(135deg, #667eea, #764ba2); box-shadow: 0 4px 25px rgba(102,126,234,0.4); font-size: 16px; padding: 12px 40px; margin-top: 5px;">MENU</button>
+    </div>
+    <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    let W, H;
+    function resizeCanvas() {
+        const headerH = document.getElementById('header').offsetHeight + document.getElementById('title').offsetHeight + document.getElementById('bar-container').offsetHeight + document.getElementById('controls').offsetHeight + 40;
+        W = window.innerWidth - 20;
+        H = window.innerHeight - headerH;
+        canvas.width = W;
+        canvas.height = H;
+        layer1.width = W; layer1.height = H;
+        layer2.width = W; layer2.height = H;
+        tintCanvas.width = W; tintCanvas.height = H;
+        bgCanvas.width = W; bgCanvas.height = H;
+        buildBg();
+    }
+
+    // Persistent paint layers
+    const layer1 = document.createElement('canvas');
+    const lctx1 = layer1.getContext('2d');
+    const layer2 = document.createElement('canvas');
+    const lctx2 = layer2.getContext('2d');
+
+    // Tint canvas for colored rendering
+    const tintCanvas = document.createElement('canvas');
+    const tintCtx = tintCanvas.getContext('2d');
+
+    // Ownership grid for scoring (low-res)
+    const GS = 5;
+    let GC, GR, ownership;
+
+    const COLOR1 = '#ff4664';
+    const COLOR1_L = '#ff8fa3';
+    const COLOR1_D = '#cc2244';
+    const COLOR2 = '#32b4ff';
+    const COLOR2_L = '#7dd3ff';
+    const COLOR2_D = '#1a7acc';
+
+    let players, keys, gameTime, gameOver, animId, bonuses, bonusTimer, particles, globalTime;
+    const DURATION = 60;
+    const SPEED = 200; // pixels per second
+    const BRUSH = 54; // base brush radius in pixels
+    const BONUS_INTERVAL = 10;
+    const MAX_BONUSES = 3;
+    const BUFF_TIME = 5;
+
+    const BONUS_TYPES = [
+        { id: 'speed',    icon: '\u26A1',       color: '#ffdd00', glow: '#ffee66', desc: 'VITESSE' },
+        { id: 'bomb',     icon: '\uD83D\uDCA3', color: '#cc44ff', glow: '#dd88ff', desc: 'BOMBE' },
+        { id: 'freeze',   icon: '\u2744\uFE0F', color: '#00eeff', glow: '#66ffff', desc: 'GEL' },
+        { id: 'steal',    icon: '\uD83D\uDD04', color: '#ff8800', glow: '#ffaa44', desc: 'VOL DE ZONE' },
+        { id: 'trail',    icon: '\uD83C\uDF1F', color: '#ffaa00', glow: '#ffcc44', desc: 'MEGA TRACE' },
+        { id: 'shrink',   icon: '\uD83D\uDD2E', color: '#88ddff', glow: '#aaeeff', desc: 'REDUCTION' },
+        { id: 'teleport', icon: '\uD83C\uDF00', color: '#aa88ff', glow: '#ccaaff', desc: 'TELEPORT' },
+        { id: 'shield',   icon: '\uD83D\uDEE1\uFE0F', color: '#44ee66', glow: '#88ff99', desc: 'BOUCLIER' }
+    ];
+
+    // Background
+    const bgCanvas = document.createElement('canvas');
+    const bgCtx = bgCanvas.getContext('2d');
+    function buildBg() {
+        const g = bgCtx.createLinearGradient(0, 0, W, H);
+        g.addColorStop(0, '#181830'); g.addColorStop(0.5, '#141428'); g.addColorStop(1, '#101024');
+        bgCtx.fillStyle = g;
+        bgCtx.fillRect(0, 0, W, H);
+        for (let i = 0; i < 4000; i++) {
+            bgCtx.fillStyle = `rgba(255,255,255,${Math.random() * 0.035})`;
+            bgCtx.fillRect(Math.random() * W, Math.random() * H, 1, 1);
+        }
+        bgCtx.fillStyle = 'rgba(255,255,255,0.03)';
+        for (let y = 0; y < H; y += 30) {
+            for (let x = 0; x < W; x += 30) {
+                bgCtx.beginPath();
+                bgCtx.arc(x, y, 1, 0, Math.PI * 2);
+                bgCtx.fill();
+            }
+        }
+    }
+
+    function init() {
+        resizeCanvas();
+        GC = Math.ceil(W / GS);
+        GR = Math.ceil(H / GS);
+        ownership = Array.from({ length: GR }, () => new Uint8Array(GC));
+        lctx1.clearRect(0, 0, W, H);
+        lctx2.clearRect(0, 0, W, H);
+        gameTime = DURATION;
+        gameOver = false;
+        globalTime = 0;
+        document.getElementById('endScreen').classList.remove('visible');
+        document.getElementById('timer').classList.remove('warning');
+
+        players = [
+            { x: 60, y: H / 2, color: 1, vx: 0, vy: 0, speedBoost: 0, frozen: 0, trail: 0, shrunk: 0, shield: 0, prevX: 60, prevY: H / 2 },
+            { x: W - 60, y: H / 2, color: 2, vx: 0, vy: 0, speedBoost: 0, frozen: 0, trail: 0, shrunk: 0, shield: 0, prevX: W - 60, prevY: H / 2 }
+        ];
+
+        bonuses = [];
+        bonusTimer = 0;
+        particles = [];
+        keys = {};
+        lastTime = performance.now();
+        timerAcc = 0;
+        if (animId) cancelAnimationFrame(animId);
+        loop();
+    }
+
+    let lastTime, timerAcc, notifTimeout;
+
+    function showNotif(text, color) {
+        const el = document.getElementById('bonus-notif');
+        el.textContent = text;
+        el.style.color = color;
+        el.classList.remove('show');
+        void el.offsetWidth;
+        el.classList.add('show');
+        clearTimeout(notifTimeout);
+        notifTimeout = setTimeout(() => el.classList.remove('show'), 1500);
+    }
+
+    function spawnParticles(x, y, color, count, opts = {}) {
+        for (let i = 0; i < count; i++) {
+            const a = Math.random() * Math.PI * 2;
+            const sp = (opts.speed || 60) + Math.random() * (opts.speedVar || 60);
+            particles.push({
+                x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+                life: (opts.life || 0.4) + Math.random() * (opts.lifeVar || 0.4),
+                color, size: (opts.size || 2) + Math.random() * (opts.sizeVar || 4)
+            });
+        }
+    }
+
+    // Paint a circle on a layer and clear from the other
+    function paintCircle(px, py, radius, playerColor) {
+        const myLayer = playerColor === 1 ? lctx1 : lctx2;
+        const otherLayer = playerColor === 1 ? lctx2 : lctx1;
+
+        // Draw on my layer with radial gradient for soft edges
+        const grad = myLayer.createRadialGradient(px, py, 0, px, py, radius);
+        grad.addColorStop(0, 'rgba(255,255,255,1)');
+        grad.addColorStop(0.7, 'rgba(255,255,255,0.95)');
+        grad.addColorStop(1, 'rgba(255,255,255,0.6)');
+        myLayer.fillStyle = grad;
+        myLayer.beginPath();
+        myLayer.arc(px, py, radius, 0, Math.PI * 2);
+        myLayer.fill();
+
+        // Erase from opponent layer
+        otherLayer.globalCompositeOperation = 'destination-out';
+        otherLayer.beginPath();
+        otherLayer.arc(px, py, radius, 0, Math.PI * 2);
+        otherLayer.fillStyle = 'rgba(255,255,255,1)';
+        otherLayer.fill();
+        otherLayer.globalCompositeOperation = 'source-over';
+
+        // Update ownership grid
+        const minR = Math.max(0, Math.floor((py - radius) / GS));
+        const maxR = Math.min(GR - 1, Math.floor((py + radius) / GS));
+        const minC = Math.max(0, Math.floor((px - radius) / GS));
+        const maxC = Math.min(GC - 1, Math.floor((px + radius) / GS));
+        for (let r = minR; r <= maxR; r++) {
+            for (let c = minC; c <= maxC; c++) {
+                const cx = c * GS + GS / 2;
+                const cy = r * GS + GS / 2;
+                const dx = cx - px, dy = cy - py;
+                if (dx * dx + dy * dy <= radius * radius) {
+                    ownership[r][c] = playerColor;
+                }
+            }
+        }
+    }
+
+    function paintBomb(p) {
+        paintCircle(p.x, p.y, 80, p.color);
+        spawnParticles(p.x, p.y, p.color === 1 ? COLOR1 : COLOR2, 40, { speed: 80, speedVar: 100, size: 3, sizeVar: 6 });
+    }
+
+    function stealZone(p) {
+        const r = 70;
+        const enemy = p.color === 1 ? 2 : 1;
+        const minR = Math.max(0, Math.floor((p.y - r) / GS));
+        const maxR = Math.min(GR - 1, Math.floor((p.y + r) / GS));
+        const minC = Math.max(0, Math.floor((p.x - r) / GS));
+        const maxC = Math.min(GC - 1, Math.floor((p.x + r) / GS));
+        for (let row = minR; row <= maxR; row++) {
+            for (let col = minC; col <= maxC; col++) {
+                const cx = col * GS + GS / 2, cy = row * GS + GS / 2;
+                const dx = cx - p.x, dy = cy - p.y;
+                if (dx * dx + dy * dy <= r * r && ownership[row][col] === enemy) {
+                    ownership[row][col] = p.color;
+                }
+            }
+        }
+        // Repaint visually
+        paintCircle(p.x, p.y, r, p.color);
+        spawnParticles(p.x, p.y, '#ff8800', 25);
+    }
+
+    function spawnBonus() {
+        if (bonuses.length >= MAX_BONUSES) return;
+        const type = BONUS_TYPES[Math.floor(Math.random() * BONUS_TYPES.length)];
+        const bx = 60 + Math.random() * (W - 120);
+        const by = 60 + Math.random() * (H - 120);
+        bonuses.push({ x: bx, y: by, type, pulse: 0, spawnTime: globalTime });
+        spawnParticles(bx, by, type.color, 12, { speed: 30, speedVar: 40, life: 0.6 });
+    }
+
+    function loop() {
+        const now = performance.now();
+        const dt = Math.min((now - lastTime) / 1000, 0.05);
+        lastTime = now;
+
+        if (!gameOver) {
+            globalTime += dt;
+            timerAcc += dt;
+            if (timerAcc >= 1) {
+                timerAcc -= 1;
+                gameTime--;
+                const el = document.getElementById('timer');
+                el.textContent = Math.max(0, gameTime);
+                if (gameTime <= 10) el.classList.add('warning');
+                if (gameTime <= 0) endGame();
+            }
+            update(dt);
+        }
+
+        draw();
+        animId = requestAnimationFrame(loop);
+    }
+
+    function update(dt) {
+        bonusTimer += dt;
+        if (bonusTimer >= BONUS_INTERVAL) { bonusTimer = 0; spawnBonus(); }
+
+        for (const b of bonuses) b.pulse += dt * 3;
+
+        for (let i = particles.length - 1; i >= 0; i--) {
+            const pt = particles[i];
+            pt.x += pt.vx * dt; pt.y += pt.vy * dt;
+            pt.vx *= 0.94; pt.vy *= 0.94;
+            pt.life -= dt;
+            if (pt.life <= 0) particles.splice(i, 1);
+        }
+
+        // Input
+        const p1 = players[0];
+        p1.vx = 0; p1.vy = 0;
+        if (keys['KeyA'] || keys['KeyQ']) p1.vx = -1;
+        if (keys['KeyD']) p1.vx = 1;
+        if (keys['KeyW'] || keys['KeyZ']) p1.vy = -1;
+        if (keys['KeyS']) p1.vy = 1;
+
+        const p2 = players[1];
+        p2.vx = 0; p2.vy = 0;
+        if (keys['ArrowLeft']) p2.vx = -1;
+        if (keys['ArrowRight']) p2.vx = 1;
+        if (keys['ArrowUp']) p2.vy = -1;
+        if (keys['ArrowDown']) p2.vy = 1;
+
+        const PR = 48; // player collision radius
+
+        for (const p of players) {
+            // Timers
+            if (p.speedBoost > 0) p.speedBoost -= dt;
+            if (p.frozen > 0) p.frozen -= dt;
+            if (p.trail > 0) p.trail -= dt;
+            if (p.shrunk > 0) p.shrunk -= dt;
+            if (p.shield > 0) p.shield -= dt;
+
+            // Normalize diagonal
+            const len = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+            if (len > 0) { p.vx /= len; p.vy /= len; }
+
+            // Speed
+            let spd = SPEED;
+            if (p.speedBoost > 0) spd *= 1.9;
+            if (p.frozen > 0) spd *= 0.3;
+
+            p.prevX = p.x;
+            p.prevY = p.y;
+            p.x += p.vx * spd * dt;
+            p.y += p.vy * spd * dt;
+
+            // Clamp with margin
+            const margin = PR;
+            p.x = Math.max(margin, Math.min(W - margin, p.x));
+            p.y = Math.max(margin, Math.min(H - margin, p.y));
+
+            // Paint brush
+            let radius = BRUSH;
+            if (p.trail > 0) radius = 126;
+            if (p.shrunk > 0) radius = 18;
+
+            // Paint along movement path
+            const pdx = p.x - p.prevX;
+            const pdy = p.y - p.prevY;
+            const dist = Math.sqrt(pdx * pdx + pdy * pdy);
+            const steps = Math.max(1, Math.ceil(dist / (radius * 0.4)));
+            for (let s = 0; s <= steps; s++) {
+                const t = s / steps;
+                paintCircle(p.prevX + pdx * t, p.prevY + pdy * t, radius, p.color);
+            }
+
+            // Effect particles
+            const moving = len > 0;
+            if (p.trail > 0 && moving && Math.random() < 0.5)
+                spawnParticles(p.x, p.y, p.color === 1 ? COLOR1_L : COLOR2_L, 1, { speed: 15, speedVar: 20, life: 0.3, size: 2, sizeVar: 3 });
+            if (p.speedBoost > 0 && moving && Math.random() < 0.4)
+                spawnParticles(p.x - p.vx * 10, p.y - p.vy * 10, '#ffdd00', 1, { speed: 10, speedVar: 15, life: 0.2, size: 1, sizeVar: 2 });
+            if (p.frozen > 0 && Math.random() < 0.15)
+                spawnParticles(p.x, p.y, '#aaeeff', 1, { speed: 10, speedVar: 15, life: 0.5, size: 1, sizeVar: 2 });
+
+            // Bonus pickup
+            const opponent = players.find(o => o !== p);
+            for (let i = bonuses.length - 1; i >= 0; i--) {
+                const b = bonuses[i];
+                const ddx = p.x - b.x, ddy = p.y - b.y;
+                if (ddx * ddx + ddy * ddy < 70 * 70) {
+                    spawnParticles(b.x, b.y, b.type.color, 20, { speed: 50, speedVar: 70 });
+                    showNotif(b.type.icon + '  ' + b.type.desc, b.type.color);
+                    switch (b.type.id) {
+                        case 'speed': p.speedBoost = BUFF_TIME; break;
+                        case 'bomb': paintBomb(p); break;
+                        case 'freeze':
+                            if (opponent.shield > 0) {
+                                opponent.shield = 0;
+                                spawnParticles(opponent.x, opponent.y, '#44ee66', 15);
+                                showNotif('\uD83D\uDEE1\uFE0F BLOQUE !', '#44ee66');
+                            } else {
+                                opponent.frozen = BUFF_TIME;
+                            }
+                            break;
+                        case 'steal': stealZone(p); break;
+                        case 'trail': p.trail = BUFF_TIME; break;
+                        case 'shrink':
+                            if (opponent.shield > 0) {
+                                opponent.shield = 0;
+                                spawnParticles(opponent.x, opponent.y, '#44ee66', 15);
+                                showNotif('\uD83D\uDEE1\uFE0F BLOQUE !', '#44ee66');
+                            } else {
+                                opponent.shrunk = BUFF_TIME;
+                            }
+                            break;
+                        case 'teleport':
+                            spawnParticles(p.x, p.y, '#aa88ff', 20);
+                            p.x = margin + Math.random() * (W - margin * 2);
+                            p.y = margin + Math.random() * (H - margin * 2);
+                            paintCircle(p.x, p.y, 50, p.color);
+                            spawnParticles(p.x, p.y, '#aa88ff', 20);
+                            break;
+                        case 'shield': p.shield = BUFF_TIME * 2; break;
+                    }
+                    bonuses.splice(i, 1);
+                }
+            }
+        }
+
+        // Player collision - bounce off each other
+        const p1c = players[0], p2c = players[1];
+        const cdx = p2c.x - p1c.x;
+        const cdy = p2c.y - p1c.y;
+        const cdist = Math.sqrt(cdx * cdx + cdy * cdy);
+        const minDist = PR * 2;
+        if (cdist < minDist && cdist > 0) {
+            // Push apart
+            const overlap = minDist - cdist;
+            const nx = cdx / cdist;
+            const ny = cdy / cdist;
+            const push = overlap / 2 + 1;
+            p1c.x -= nx * push;
+            p1c.y -= ny * push;
+            p2c.x += nx * push;
+            p2c.y += ny * push;
+
+            // Re-clamp
+            p1c.x = Math.max(PR, Math.min(W - PR, p1c.x));
+            p1c.y = Math.max(PR, Math.min(H - PR, p1c.y));
+            p2c.x = Math.max(PR, Math.min(W - PR, p2c.x));
+            p2c.y = Math.max(PR, Math.min(H - PR, p2c.y));
+
+            // Collision particles
+            const mx = (p1c.x + p2c.x) / 2;
+            const my = (p1c.y + p2c.y) / 2;
+            spawnParticles(mx, my, '#fff', 6, { speed: 30, speedVar: 30, life: 0.2, size: 1, sizeVar: 2 });
+        }
+
+        // Scores
+        let c1 = 0, c2 = 0, total = GC * GR;
+        for (let r = 0; r < GR; r++) {
+            for (let c = 0; c < GC; c++) {
+                if (ownership[r][c] === 1) c1++;
+                else if (ownership[r][c] === 2) c2++;
+            }
+        }
+        const p1p = (c1 / total) * 100;
+        const p2p = (c2 / total) * 100;
+
+        const fxStr = (p) => {
+            let s = '';
+            if (p.speedBoost > 0) s += '\u26A1';
+            if (p.trail > 0) s += '\uD83C\uDF1F';
+            if (p.frozen > 0) s += '\u2744\uFE0F';
+            if (p.shrunk > 0) s += '\uD83D\uDD2E';
+            if (p.shield > 0) s += '\uD83D\uDEE1\uFE0F';
+            return s;
+        };
+        document.getElementById('score1').innerHTML = `J1: ${p1p.toFixed(1)}%<span class="effect-icons">${fxStr(players[0])}</span>`;
+        document.getElementById('score2').innerHTML = `J2: ${p2p.toFixed(1)}%<span class="effect-icons">${fxStr(players[1])}</span>`;
+        document.getElementById('bar1').style.width = p1p + '%';
+        document.getElementById('bar2').style.width = p2p + '%';
+    }
+
+    function draw() {
+        // Background
+        ctx.drawImage(bgCanvas, 0, 0);
+
+        // Paint layers - rendered with color tinting
+        // Player 1 paint (red tint)
+        ctx.save();
+        ctx.globalAlpha = 0.85;
+        ctx.drawImage(layer1, 0, 0);
+        ctx.globalCompositeOperation = 'source-atop';
+        ctx.fillStyle = COLOR1_L;
+        ctx.fillRect(0, 0, W, H);
+        ctx.restore();
+
+        // We need to composite properly. Use temp approach:
+        // Draw layer1 as alpha mask, fill with red
+        // Draw layer2 as alpha mask, fill with blue
+
+        // Clear and redraw properly
+        ctx.drawImage(bgCanvas, 0, 0);
+
+        // Layer 1: red paint
+        ctx.save();
+        ctx.globalCompositeOperation = 'source-over';
+        // Draw the white layer, then tint it
+        // We'll use a trick: draw to main, then multiply with color
+        drawColoredLayer(lctx1, layer1, ['#ff8fa3', '#ff7088', '#ffa0b3'], 1);
+        drawColoredLayer(lctx2, layer2, ['#7dd3ff', '#68c4f0', '#92dfff'], 2);
+        ctx.restore();
+
+        // Particles
+        for (const pt of particles) {
+            const a = Math.min(1, pt.life * 2.5);
+            ctx.globalAlpha = a;
+            ctx.fillStyle = pt.color;
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, pt.size * (0.5 + a * 0.5), 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+
+        // Bonuses
+        for (const b of bonuses) {
+            const ps = 1 + Math.sin(b.pulse) * 0.12;
+            const r = 40 * ps;
+            const fy = Math.sin(b.pulse * 0.7) * 4;
+            const age = globalTime - b.spawnTime;
+            const sc = Math.min(1, age * 4);
+
+            ctx.save();
+            ctx.translate(b.x, b.y + fy);
+            ctx.scale(sc, sc);
+
+            // Glow ring
+            ctx.globalAlpha = 0.15 + Math.sin(b.pulse * 1.5) * 0.08;
+            ctx.strokeStyle = b.type.color;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.arc(0, 0, r + 12, 0, Math.PI * 2); ctx.stroke();
+            ctx.globalAlpha = 1;
+
+            // Radial glow
+            const gg = ctx.createRadialGradient(0, 0, 0, 0, 0, r + 18);
+            gg.addColorStop(0, b.type.glow + '55');
+            gg.addColorStop(0.6, b.type.glow + '18');
+            gg.addColorStop(1, b.type.glow + '00');
+            ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(0, 0, r + 18, 0, Math.PI * 2); ctx.fill();
+
+            // Circle
+            const cg = ctx.createRadialGradient(-r * 0.25, -r * 0.25, 0, 0, 0, r);
+            cg.addColorStop(0, b.type.glow); cg.addColorStop(0.7, b.type.color); cg.addColorStop(1, b.type.color + 'cc');
+            ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
+
+            // Gloss
+            ctx.fillStyle = 'rgba(255,255,255,0.25)';
+            ctx.beginPath(); ctx.ellipse(-r * 0.15, -r * 0.3, r * 0.5, r * 0.25, -0.3, 0, Math.PI * 2); ctx.fill();
+
+            // Border
+            ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
+
+            // Icon
+            ctx.font = `${Math.round(r * 1.1)}px Arial`;
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(b.type.icon, 0, 2);
+
+            ctx.restore();
+        }
+
+        // Players
+        for (const p of players) {
+            const isP1 = p.color === 1;
+            const col = isP1 ? COLOR1 : COLOR2;
+            const colL = isP1 ? '#ff7a93' : '#66ccff';
+            const colD = isP1 ? COLOR1_D : COLOR2_D;
+            const PR = 48;
+
+            ctx.save();
+
+            // Squash/stretch
+            const dx = p.x - (p.prevX || p.x);
+            const dy = p.y - (p.prevY || p.y);
+            const ms = Math.sqrt(dx * dx + dy * dy);
+            const stretch = 1 + Math.min(ms * 0.01, 0.15);
+            const squash = 1 / stretch;
+            const ma = ms > 0.5 ? Math.atan2(dy, dx) : 0;
+
+            ctx.translate(p.x, p.y);
+            if (ms > 0.5) { ctx.rotate(ma); ctx.scale(stretch, squash); ctx.rotate(-ma); }
+
+            // Speed aura
+            if (p.speedBoost > 0) {
+                ctx.strokeStyle = 'rgba(255,221,0,0.5)'; ctx.lineWidth = 3;
+                ctx.setLineDash([6, 4]); ctx.lineDashOffset = globalTime * 40;
+                ctx.beginPath(); ctx.arc(0, 0, PR + 10, 0, Math.PI * 2); ctx.stroke();
+                ctx.setLineDash([]); ctx.lineDashOffset = 0;
+            }
+            if (p.trail > 0) {
+                ctx.fillStyle = 'rgba(255,170,0,0.12)';
+                ctx.beginPath(); ctx.arc(0, 0, 42, 0, Math.PI * 2); ctx.fill();
+            }
+            if (p.shield > 0) {
+                ctx.strokeStyle = 'rgba(68,238,102,0.6)';
+                ctx.lineWidth = 3;
+                ctx.setLineDash([8, 4]);
+                ctx.lineDashOffset = -globalTime * 20;
+                ctx.beginPath(); ctx.arc(0, 0, PR + 8, 0, Math.PI * 2); ctx.stroke();
+                ctx.setLineDash([]); ctx.lineDashOffset = 0;
+                const sg = ctx.createRadialGradient(0, 0, PR, 0, 0, PR + 10);
+                sg.addColorStop(0, 'rgba(68,238,102,0)');
+                sg.addColorStop(1, 'rgba(68,238,102,0.15)');
+                ctx.fillStyle = sg;
+                ctx.beginPath(); ctx.arc(0, 0, PR + 10, 0, Math.PI * 2); ctx.fill();
+            }
+            if (p.frozen > 0) {
+                const fg = ctx.createRadialGradient(0, 0, PR * 0.5, 0, 0, PR + 14);
+                fg.addColorStop(0, 'rgba(0,238,255,0)');
+                fg.addColorStop(0.7, 'rgba(0,238,255,0.15)');
+                fg.addColorStop(1, 'rgba(0,238,255,0.35)');
+                ctx.fillStyle = fg; ctx.beginPath(); ctx.arc(0, 0, PR + 14, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = 'rgba(200,240,255,0.4)'; ctx.lineWidth = 1;
+                for (let i = 0; i < 6; i++) {
+                    const a = i * Math.PI / 3 + globalTime * 0.5;
+                    ctx.beginPath(); ctx.moveTo(Math.cos(a) * (PR + 2), Math.sin(a) * (PR + 2));
+                    ctx.lineTo(Math.cos(a) * (PR + 10), Math.sin(a) * (PR + 10)); ctx.stroke();
+                }
+            }
+
+            // Shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.4)';
+            ctx.beginPath(); ctx.ellipse(3, 5, PR * 0.9, PR * 0.5, 0, 0, Math.PI * 2); ctx.fill();
+
+            // Body
+            const bg = ctx.createRadialGradient(-PR * 0.25, -PR * 0.25, 0, 0, 0, PR);
+            if (p.frozen > 0) { bg.addColorStop(0, '#b8ddf0'); bg.addColorStop(1, '#5a99bb'); }
+            else { bg.addColorStop(0, colL); bg.addColorStop(1, colD); }
+            ctx.fillStyle = bg; ctx.beginPath(); ctx.arc(0, 0, PR, 0, Math.PI * 2); ctx.fill();
+
+            // Gloss
+            ctx.fillStyle = 'rgba(255,255,255,0.2)';
+            ctx.beginPath(); ctx.ellipse(-PR * 0.2, -PR * 0.35, PR * 0.45, PR * 0.2, -0.4, 0, Math.PI * 2); ctx.fill();
+
+            // Border
+            ctx.strokeStyle = 'rgba(255,255,255,0.75)'; ctx.lineWidth = 2.5;
+            ctx.beginPath(); ctx.arc(0, 0, PR, 0, Math.PI * 2); ctx.stroke();
+
+            // Eyes
+            const ex = (p.vx > 0 ? 6 : p.vx < 0 ? -6 : 0);
+            const ey = (p.vy > 0 ? 4.5 : p.vy < 0 ? -4.5 : 0);
+            ctx.fillStyle = '#fff';
+            ctx.beginPath(); ctx.ellipse(-15, -6, 13.5, 16.5, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(15, -6, 13.5, 16.5, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = isP1 ? '#881133' : '#113366';
+            ctx.beginPath(); ctx.arc(-12 + ex, -4.5 + ey, 9, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(18 + ex, -4.5 + ey, 9, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#000';
+            ctx.beginPath(); ctx.arc(-12 + ex, -4.5 + ey, 5.4, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(18 + ex, -4.5 + ey, 5.4, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = 'rgba(255,255,255,0.85)';
+            ctx.beginPath(); ctx.arc(-16.5 + ex * 0.3, -10.5, 4.5, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(13.5 + ex * 0.3, -10.5, 4.5, 0, Math.PI * 2); ctx.fill();
+
+            // Mouth
+            if (p.frozen > 0) {
+                ctx.strokeStyle = '#445566'; ctx.lineWidth = 4;
+                ctx.beginPath(); ctx.moveTo(-9, 15);
+                ctx.quadraticCurveTo(-3, 12, 0, 15); ctx.quadraticCurveTo(3, 18, 9, 15); ctx.stroke();
+            } else if (ms > 2) {
+                ctx.strokeStyle = colD; ctx.lineWidth = 4;
+                ctx.beginPath(); ctx.arc(1.5, 9, 9, 0.2, Math.PI - 0.2); ctx.stroke();
+            } else {
+                ctx.fillStyle = colD;
+                ctx.beginPath(); ctx.ellipse(1.5, 13.5, 6, 3.6, 0, 0, Math.PI * 2); ctx.fill();
+            }
+
+            // Label
+            ctx.font = 'bold 20px Nunito, Arial'; ctx.textAlign = 'center';
+            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            ctx.fillText(isP1 ? 'J1' : 'J2', 0, -PR - 8);
+
+            ctx.restore();
+        }
+
+        // Vignette
+        const vig = ctx.createRadialGradient(W / 2, H / 2, W * 0.3, W / 2, H / 2, W * 0.7);
+        vig.addColorStop(0, 'rgba(0,0,0,0)'); vig.addColorStop(1, 'rgba(0,0,0,0.2)');
+        ctx.fillStyle = vig; ctx.fillRect(0, 0, W, H);
+    }
+
+    // Draw a paint layer with color tinting
+
+    function drawColoredLayer(layerCtx, layerCanvas, colors, playerNum) {
+        tintCtx.clearRect(0, 0, W, H);
+
+        // Draw the white alpha mask
+        tintCtx.globalCompositeOperation = 'source-over';
+        tintCtx.drawImage(layerCanvas, 0, 0);
+
+        // Tint it with color using source-in
+        tintCtx.globalCompositeOperation = 'source-in';
+        const g = tintCtx.createLinearGradient(0, 0, W, H);
+        g.addColorStop(0, colors[0]);
+        g.addColorStop(0.5, colors[1]);
+        g.addColorStop(1, colors[2]);
+        tintCtx.fillStyle = g;
+        tintCtx.fillRect(0, 0, W, H);
+
+        tintCtx.globalCompositeOperation = 'source-over';
+
+        ctx.drawImage(tintCanvas, 0, 0);
+    }
+
+    function endGame() {
+        gameOver = true;
+        let c1 = 0, c2 = 0, total = GC * GR;
+        for (let r = 0; r < GR; r++) {
+            for (let c = 0; c < GC; c++) {
+                if (ownership[r][c] === 1) c1++;
+                else if (ownership[r][c] === 2) c2++;
+            }
+        }
+        const p1 = (c1 / total) * 100;
+        const p2 = (c2 / total) * 100;
+
+        let winner, wc;
+        if (c1 > c2) { winner = 'JOUEUR 1 GAGNE !'; wc = COLOR1; }
+        else if (c2 > c1) { winner = 'JOUEUR 2 GAGNE !'; wc = COLOR2; }
+        else { winner = 'EGALITE !'; wc = '#fff'; }
+
+        document.getElementById('winnerText').textContent = winner;
+        document.getElementById('winnerText').style.color = wc;
+        document.getElementById('finalScore').textContent = `Rouge: ${p1.toFixed(1)}%  \u2014  Bleu: ${p2.toFixed(1)}%`;
+        document.getElementById('bf1').style.width = p1 + '%';
+        document.getElementById('bf2').style.width = p2 + '%';
+        document.getElementById('endScreen').classList.add('visible');
+    }
+
+    document.addEventListener('keydown', e => {
+        keys[e.code] = true;
+        if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
+    });
+    document.addEventListener('keyup', e => { keys[e.code] = false; });
+    document.getElementById('restartBtn').addEventListener('click', init);
+
+    function startGame() {
+        document.getElementById('menuScreen').classList.add('hidden');
+        document.getElementById('gameArea').classList.add('visible');
+        init();
+    }
+
+    function goToMenu() {
+        if (animId) cancelAnimationFrame(animId);
+        animId = null;
+        document.getElementById('endScreen').classList.remove('visible');
+        document.getElementById('gameArea').classList.remove('visible');
+        document.getElementById('menuScreen').classList.remove('hidden');
+    }
+
+    document.getElementById('playBtn').addEventListener('click', startGame);
+    document.getElementById('menuBtn').addEventListener('click', goToMenu);
+    </script>
+</body>
+</html>
