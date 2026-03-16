@@ -681,12 +681,13 @@
 
         ctx.save();ctx.globalAlpha=0.85;ctx.drawImage(layer1,0,0);ctx.globalCompositeOperation='source-atop';ctx.fillStyle=COLOR1_L;ctx.fillRect(0,0,W,H);ctx.restore();
         ctx.drawImage(bgCanvas,0,0);
-        // Redraw obstacles on top of bg
-        for(const o of(obstacles||[])){ctx.save();ctx.shadowColor='rgba(160,120,255,0.5)';ctx.shadowBlur=18;const g=ctx.createLinearGradient(o.x,o.y,o.x+o.w,o.y+o.h);g.addColorStop(0,'#4a3a7a');g.addColorStop(1,'#3a2a6a');ctx.fillStyle=g;ctx.beginPath();ctx.roundRect(o.x,o.y,o.w,o.h,8);ctx.fill();ctx.restore();ctx.strokeStyle='rgba(200,170,255,0.6)';ctx.lineWidth=2.5;ctx.beginPath();ctx.roundRect(o.x,o.y,o.w,o.h,8);ctx.stroke();}
         ctx.save();ctx.globalCompositeOperation='source-over';
         drawColoredLayer(lctx1,layer1,['#ff8fa3','#ff7088','#ffa0b3'],1);
         drawColoredLayer(lctx2,layer2,['#7dd3ff','#68c4f0','#92dfff'],2);
         ctx.restore();
+
+        // Draw obstacles on top of paint
+        for(const o of(obstacles||[])){ctx.save();ctx.shadowColor='rgba(160,120,255,0.5)';ctx.shadowBlur=18;const g=ctx.createLinearGradient(o.x,o.y,o.x+o.w,o.y+o.h);g.addColorStop(0,'#4a3a7a');g.addColorStop(1,'#3a2a6a');ctx.fillStyle=g;ctx.beginPath();ctx.roundRect(o.x,o.y,o.w,o.h,8);ctx.fill();ctx.restore();ctx.strokeStyle='rgba(200,170,255,0.6)';ctx.lineWidth=2.5;ctx.beginPath();ctx.roundRect(o.x,o.y,o.w,o.h,8);ctx.stroke();}
 
         for(const pt of particles){const a=Math.min(1,pt.life*2.5);ctx.globalAlpha=a;ctx.fillStyle=pt.color;ctx.beginPath();ctx.arc(pt.x,pt.y,pt.size*(0.5+a*0.5),0,Math.PI*2);ctx.fill();}
         ctx.globalAlpha=1;
