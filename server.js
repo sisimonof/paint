@@ -56,6 +56,13 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Relay obstacles from host to guest
+    socket.on('sync-obstacles', (data) => {
+        if (socket.roomCode) {
+            socket.to(socket.roomCode).emit('sync-obstacles', data);
+        }
+    });
+
     // Relay bonus spawn (from host)
     socket.on('bonus-spawn', (data) => {
         if (socket.roomCode) {

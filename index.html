@@ -442,6 +442,11 @@
 
         generateObstacles();
 
+        // In online mode, host sends obstacles to guest so both have the same layout
+        if (onlineMode && isHost && socket) {
+            socket.emit('sync-obstacles', { obstacles: obstacles });
+        }
+
         const char1 = CHARACTERS.find(c=>c.id===saveData.selected[0]) || CHARACTERS[0];
         const char2 = CHARACTERS.find(c=>c.id===saveData.selected[1]) || CHARACTERS[0];
 
@@ -659,25 +664,30 @@
 
         // Obstacles
         for (const o of (obstacles||[])) {
+            // Outer glow
+            ctx.save();
+            ctx.shadowColor = 'rgba(160,120,255,0.5)'; ctx.shadowBlur = 18;
             const g = ctx.createLinearGradient(o.x,o.y,o.x+o.w,o.y+o.h);
-            g.addColorStop(0,'#2a2a4a'); g.addColorStop(1,'#1e1e3a');
+            g.addColorStop(0,'#4a3a7a'); g.addColorStop(1,'#3a2a6a');
             ctx.fillStyle = g; ctx.beginPath();
             ctx.roundRect(o.x,o.y,o.w,o.h,8); ctx.fill();
-            ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 2;
-            ctx.stroke();
-            // Inner glow
-            ctx.fillStyle = 'rgba(255,255,255,0.03)';
+            ctx.restore();
+            ctx.strokeStyle = 'rgba(200,170,255,0.6)'; ctx.lineWidth = 2.5;
+            ctx.beginPath(); ctx.roundRect(o.x,o.y,o.w,o.h,8); ctx.stroke();
+            // Inner highlight
+            ctx.fillStyle = 'rgba(200,170,255,0.08)';
             ctx.beginPath(); ctx.roundRect(o.x+3,o.y+3,o.w-6,o.h-6,6); ctx.fill();
         }
 
         ctx.save();ctx.globalAlpha=0.85;ctx.drawImage(layer1,0,0);ctx.globalCompositeOperation='source-atop';ctx.fillStyle=COLOR1_L;ctx.fillRect(0,0,W,H);ctx.restore();
         ctx.drawImage(bgCanvas,0,0);
-        // Redraw obstacles on top of bg
-        for(const o of(obstacles||[])){const g=ctx.createLinearGradient(o.x,o.y,o.x+o.w,o.y+o.h);g.addColorStop(0,'#2a2a4a');g.addColorStop(1,'#1e1e3a');ctx.fillStyle=g;ctx.beginPath();ctx.roundRect(o.x,o.y,o.w,o.h,8);ctx.fill();ctx.strokeStyle='rgba(255,255,255,0.15)';ctx.lineWidth=2;ctx.stroke();}
         ctx.save();ctx.globalCompositeOperation='source-over';
         drawColoredLayer(lctx1,layer1,['#ff8fa3','#ff7088','#ffa0b3'],1);
         drawColoredLayer(lctx2,layer2,['#7dd3ff','#68c4f0','#92dfff'],2);
         ctx.restore();
+
+        // Draw obstacles on top of paint
+        for(const o of(obstacles||[])){ctx.save();ctx.shadowColor='rgba(160,120,255,0.5)';ctx.shadowBlur=18;const g=ctx.createLinearGradient(o.x,o.y,o.x+o.w,o.y+o.h);g.addColorStop(0,'#4a3a7a');g.addColorStop(1,'#3a2a6a');ctx.fillStyle=g;ctx.beginPath();ctx.roundRect(o.x,o.y,o.w,o.h,8);ctx.fill();ctx.restore();ctx.strokeStyle='rgba(200,170,255,0.6)';ctx.lineWidth=2.5;ctx.beginPath();ctx.roundRect(o.x,o.y,o.w,o.h,8);ctx.stroke();}
 
         for(const pt of particles){const a=Math.min(1,pt.life*2.5);ctx.globalAlpha=a;ctx.fillStyle=pt.color;ctx.beginPath();ctx.arc(pt.x,pt.y,pt.size*(0.5+a*0.5),0,Math.PI*2);ctx.fill();}
         ctx.globalAlpha=1;
@@ -783,7 +793,8 @@
         socket.on('room-created',code=>{myPlayerNum=1;isHost=true;document.getElementById('createStatus').innerHTML=`<div class="room-code">${code}</div><p class="lobby-status waiting">En attente d'un adversaire</p>`;});
         socket.on('room-joined',()=>{myPlayerNum=2;isHost=false;});
         socket.on('join-error',msg=>document.getElementById('joinError').textContent=msg);
-        socket.on('game-start',()=>{onlineMode=true;hideAll();document.getElementById('gameArea').classList.add('visible');init();});
+        socket.on('game-start',(data)=>{onlineMode=true;hideAll();document.getElementById('gameArea').classList.add('visible');init();if(data&&data.obstacles){obstacles=data.obstacles;}});
+        socket.on('sync-obstacles',(data)=>{if(data&&data.obstacles){obstacles=data.obstacles;}});
         socket.on('pos',data=>{if(!players)return;const other=players[myPlayerNum===1?1:0];other.prevX=other.x;other.prevY=other.y;other.x=data.x*W;other.y=data.y*H;other.vx=data.vx;other.vy=data.vy;other.speedBoost=data.speedBoost;other.frozen=data.frozen;other.trail=data.trail;other.shrunk=data.shrunk;other.shield=data.shield;other.invisible=data.invisible||0;});
         socket.on('bonus-spawn',data=>spawnBonus(data));
         socket.on('bonus-pickup',data=>{if(!players)return;applyBonus(players[data.playerNum-1],data.bonusId,data.bonusIdx);});
