@@ -224,7 +224,7 @@
         { id:'volt',   name:'Volt',   icon:'\u26A1',       rarity:'rare',      color:'#ffee00', power:'Eclair',        desc:'Ralentit l\'adversaire a distance', cooldown:8 },
         { id:'ombre',  name:'Ombre',  icon:'\uD83D\uDC7B', rarity:'rare',      color:'#aa88ff', power:'Invisibilite',  desc:'Devient invisible 2s', cooldown:10 },
         { id:'titan',  name:'Titan',  icon:'\uD83D\uDCAA', rarity:'rare',      color:'#ff8844', power:'Mega Stomp',    desc:'Enorme zone de peinture autour', cooldown:9 },
-        { id:'crystal',name:'Crystal',icon:'\uD83D\uDC8E', rarity:'epic',      color:'#ee44ff', power:'Bouclier Miroir',desc:'Renvoie le prochain effet negatif', cooldown:12 },
+        { id:'crystal',name:'Crystal',icon:'\uD83D\uDC8E', rarity:'epic',      color:'#ee44ff', power:'Explosion Crystal',desc:'Grande zone de peinture + gele adversaire', cooldown:12 },
         { id:'nova',   name:'Nova',   icon:'\u2B50',       rarity:'legendary', color:'#ffdd00', power:'Supernova',     desc:'Explosion massive + boost de vitesse', cooldown:15 }
     ];
 
@@ -337,7 +337,7 @@
     const COLOR1 = '#ff4664', COLOR1_L = '#ff8fa3', COLOR1_D = '#cc2244';
     const COLOR2 = '#32b4ff', COLOR2_L = '#7dd3ff', COLOR2_D = '#1a7acc';
 
-    let players, keys, gameTime, gameOver, animId, bonuses, bonusTimer, particles, globalTime, obstacles;
+    let players, keys, gameTime, gameOver, animId, bonuses, bonusTimer, particles, globalTime;
     const DURATION = 60, SPEED = 350, BRUSH = 54, BONUS_INTERVAL = 10, MAX_BONUSES = 3, BUFF_TIME = 5;
     let onlineMode = false, myPlayerNum = 0, isHost = false, socket = null;
 
@@ -345,11 +345,9 @@
         { id:'speed', icon:'\u26A1', color:'#ffdd00', glow:'#ffee66', desc:'VITESSE' },
         { id:'bomb', icon:'\uD83D\uDCA3', color:'#cc44ff', glow:'#dd88ff', desc:'BOMBE' },
         { id:'freeze', icon:'\u2744\uFE0F', color:'#00eeff', glow:'#66ffff', desc:'GEL' },
-        { id:'steal', icon:'\uD83D\uDD04', color:'#ff8800', glow:'#ffaa44', desc:'VOL DE ZONE' },
         { id:'trail', icon:'\uD83C\uDF1F', color:'#ffaa00', glow:'#ffcc44', desc:'MEGA TRACE' },
         { id:'shrink', icon:'\uD83D\uDD2E', color:'#88ddff', glow:'#aaeeff', desc:'REDUCTION' },
-        { id:'teleport', icon:'\uD83C\uDF00', color:'#aa88ff', glow:'#ccaaff', desc:'TELEPORT' },
-        { id:'shield', icon:'\uD83D\uDEE1\uFE0F', color:'#44ee66', glow:'#88ff99', desc:'BOUCLIER' }
+        { id:'teleport', icon:'\uD83C\uDF00', color:'#aa88ff', glow:'#ccaaff', desc:'TELEPORT' }
     ];
 
     const bgCanvas = document.createElement('canvas'); const bgCtx = bgCanvas.getContext('2d');
@@ -360,48 +358,6 @@
         for (let i=0;i<4000;i++) { bgCtx.fillStyle=`rgba(255,255,255,${Math.random()*0.035})`; bgCtx.fillRect(Math.random()*W,Math.random()*H,1,1); }
         bgCtx.fillStyle='rgba(255,255,255,0.03)';
         for (let y=0;y<H;y+=30) for (let x=0;x<W;x+=30) { bgCtx.beginPath(); bgCtx.arc(x,y,1,0,Math.PI*2); bgCtx.fill(); }
-    }
-
-    // ===== OBSTACLES =====
-    function generateObstacles() {
-        obstacles = [];
-        const count = 4 + Math.floor(Math.random() * 4);
-        for (let i = 0; i < count; i++) {
-            const w = 30 + Math.random() * 80;
-            const h = 30 + Math.random() * 80;
-            const x = 120 + Math.random() * (W - 240 - w);
-            const y = 60 + Math.random() * (H - 120 - h);
-            // Don't place near spawn points
-            const d1 = Math.sqrt((x+w/2-60)**2 + (y+h/2-H/2)**2);
-            const d2 = Math.sqrt((x+w/2-(W-60))**2 + (y+h/2-H/2)**2);
-            if (d1 > 120 && d2 > 120) {
-                obstacles.push({ x, y, w, h });
-            }
-        }
-    }
-
-    function collidesObstacle(px, py, pr) {
-        for (const o of obstacles) {
-            const cx = Math.max(o.x, Math.min(o.x + o.w, px));
-            const cy = Math.max(o.y, Math.min(o.y + o.h, py));
-            const dx = px - cx, dy = py - cy;
-            if (dx*dx + dy*dy < pr*pr) return o;
-        }
-        return null;
-    }
-
-    function resolveObstacleCollision(p, pr) {
-        for (const o of obstacles) {
-            const cx = Math.max(o.x, Math.min(o.x+o.w, p.x));
-            const cy = Math.max(o.y, Math.min(o.y+o.h, p.y));
-            const dx = p.x-cx, dy = p.y-cy;
-            const dist = Math.sqrt(dx*dx+dy*dy);
-            if (dist < pr && dist > 0) {
-                const push = (pr-dist)/dist;
-                p.x += dx*push;
-                p.y += dy*push;
-            }
-        }
     }
 
     // ===== COUNTDOWN =====
@@ -440,19 +396,12 @@
         document.getElementById('timer').classList.remove('warning');
         document.getElementById('timer').textContent = DURATION;
 
-        generateObstacles();
-
-        // In online mode, host sends obstacles to guest so both have the same layout
-        if (onlineMode && isHost && socket) {
-            socket.emit('sync-obstacles', { obstacles: obstacles });
-        }
-
         const char1 = CHARACTERS.find(c=>c.id===saveData.selected[0]) || CHARACTERS[0];
         const char2 = CHARACTERS.find(c=>c.id===saveData.selected[1]) || CHARACTERS[0];
 
         players = [
-            { x:60, y:H/2, color:1, vx:0, vy:0, speedBoost:0, frozen:0, trail:0, shrunk:0, shield:0, prevX:60, prevY:H/2, char:char1, cooldown:0, invisible:0 },
-            { x:W-60, y:H/2, color:2, vx:0, vy:0, speedBoost:0, frozen:0, trail:0, shrunk:0, shield:0, prevX:W-60, prevY:H/2, char:char2, cooldown:0, invisible:0 }
+            { x:60, y:H/2, color:1, vx:0, vy:0, speedBoost:0, frozen:0, trail:0, shrunk:0, prevX:60, prevY:H/2, char:char1, cooldown:0, invisible:0 },
+            { x:W-60, y:H/2, color:2, vx:0, vy:0, speedBoost:0, frozen:0, trail:0, shrunk:0, prevX:W-60, prevY:H/2, char:char2, cooldown:0, invisible:0 }
         ];
 
         if (onlineMode) {
@@ -482,32 +431,23 @@
 
     function paintCircle(px,py,radius,playerColor) {
         const myLayer=playerColor===1?lctx1:lctx2, otherLayer=playerColor===1?lctx2:lctx1;
-        // Check obstacle - don't paint inside obstacles
         const grad=myLayer.createRadialGradient(px,py,0,px,py,radius);
         grad.addColorStop(0,'rgba(255,255,255,1)'); grad.addColorStop(0.7,'rgba(255,255,255,0.95)'); grad.addColorStop(1,'rgba(255,255,255,0.6)');
         myLayer.fillStyle=grad; myLayer.beginPath(); myLayer.arc(px,py,radius,0,Math.PI*2); myLayer.fill();
         otherLayer.globalCompositeOperation='destination-out'; otherLayer.beginPath(); otherLayer.arc(px,py,radius,0,Math.PI*2); otherLayer.fillStyle='rgba(255,255,255,1)'; otherLayer.fill(); otherLayer.globalCompositeOperation='source-over';
         const minR=Math.max(0,Math.floor((py-radius)/GS)),maxR=Math.min(GR-1,Math.floor((py+radius)/GS)),minC=Math.max(0,Math.floor((px-radius)/GS)),maxC=Math.min(GC-1,Math.floor((px+radius)/GS));
-        for(let r=minR;r<=maxR;r++) for(let c=minC;c<=maxC;c++) { const cx=c*GS+GS/2,cy=r*GS+GS/2,dx=cx-px,dy=cy-py; if(dx*dx+dy*dy<=radius*radius) { if(!collidesObstacle(cx,cy,1)) ownership[r][c]=playerColor; } }
+        for(let r=minR;r<=maxR;r++) for(let c=minC;c<=maxC;c++) { const cx=c*GS+GS/2,cy=r*GS+GS/2,dx=cx-px,dy=cy-py; if(dx*dx+dy*dy<=radius*radius) ownership[r][c]=playerColor; }
     }
-    function paintBomb(p) { paintCircle(p.x,p.y,80,p.color); spawnParticles(p.x,p.y,p.color===1?COLOR1:COLOR2,40,{speed:80,speedVar:100,size:3,sizeVar:6}); }
-    function stealZone(p) {
-        const r=70,enemy=p.color===1?2:1;
-        const minR=Math.max(0,Math.floor((p.y-r)/GS)),maxR=Math.min(GR-1,Math.floor((p.y+r)/GS)),minC=Math.max(0,Math.floor((p.x-r)/GS)),maxC=Math.min(GC-1,Math.floor((p.x+r)/GS));
-        for(let row=minR;row<=maxR;row++) for(let col=minC;col<=maxC;col++) { const cx=col*GS+GS/2,cy=row*GS+GS/2,dx=cx-p.x,dy=cy-p.y; if(dx*dx+dy*dy<=r*r&&ownership[row][col]===enemy) ownership[row][col]=p.color; }
-        paintCircle(p.x,p.y,r,p.color); spawnParticles(p.x,p.y,'#ff8800',25);
-    }
+    function paintBomb(p) { paintCircle(p.x,p.y,150,p.color); spawnParticles(p.x,p.y,p.color===1?COLOR1:COLOR2,40,{speed:80,speedVar:100,size:3,sizeVar:6}); }
 
     function spawnBonus(forceData) {
         if(!forceData&&bonuses.length>=MAX_BONUSES) return;
-        let bx,by,type;
-        if(forceData){bx=forceData.x*W;by=forceData.y*H;type=BONUS_TYPES[forceData.typeIdx];}
-        else{type=BONUS_TYPES[Math.floor(Math.random()*BONUS_TYPES.length)];bx=60+Math.random()*(W-120);by=60+Math.random()*(H-120);}
-        // Don't spawn in obstacles
-        if(collidesObstacle(bx,by,30)&&!forceData){spawnBonus();return;}
-        bonuses.push({x:bx,y:by,type,pulse:0,spawnTime:globalTime});
+        let bx,by,type,uid;
+        if(forceData){bx=forceData.x*W;by=forceData.y*H;type=BONUS_TYPES[forceData.typeIdx];uid=forceData.uid;}
+        else{type=BONUS_TYPES[Math.floor(Math.random()*BONUS_TYPES.length)];bx=60+Math.random()*(W-120);by=60+Math.random()*(H-120);uid=Date.now()+'_'+Math.random().toString(36).slice(2,6);}
+        bonuses.push({x:bx,y:by,type,pulse:0,spawnTime:globalTime,uid});
         spawnParticles(bx,by,type.color,12,{speed:30,speedVar:40,life:0.6});
-        if(onlineMode&&isHost&&!forceData) socket.emit('bonus-spawn',{x:bx/W,y:by/H,typeIdx:BONUS_TYPES.indexOf(type)});
+        if(onlineMode&&isHost&&!forceData) socket.emit('bonus-spawn',{x:bx/W,y:by/H,typeIdx:BONUS_TYPES.indexOf(type),uid});
     }
 
     // ===== CHARACTER POWERS =====
@@ -535,12 +475,14 @@
             case 'aqua': // Push opponent
                 const wdx=opponent.x-p.x, wdy=opponent.y-p.y;
                 const wdist=Math.sqrt(wdx*wdx+wdy*wdy);
-                if(wdist<300&&wdist>0){opponent.x+=wdx/wdist*180;opponent.y+=wdy/wdist*180;opponent.x=Math.max(PR,Math.min(W-PR,opponent.x));opponent.y=Math.max(PR,Math.min(H-PR,opponent.y));}
+                if(wdist<300&&wdist>0){opponent.x+=wdx/wdist*180;opponent.y+=wdy/wdist*180;opponent.x=Math.max(PR,Math.min(W-PR,opponent.x));opponent.y=Math.max(PR,Math.min(H-PR,opponent.y));
+                    if(onlineMode&&socket)socket.emit('power-used',{effect:'pushX',value:opponent.x/W,valueY:opponent.y/H});}
                 spawnParticles(p.x,p.y,'#33ccff',20,{speed:60,speedVar:40});
                 showNotif(ch.icon+' VAGUE','#33ccff');
                 break;
             case 'volt': // Slow opponent
                 opponent.frozen = 2;
+                if(onlineMode&&socket)socket.emit('power-used',{effect:'frozen',value:2});
                 spawnParticles(opponent.x,opponent.y,'#ffee00',25,{speed:50,speedVar:40});
                 showNotif(ch.icon+' ECLAIR','#ffee00');
                 break;
@@ -554,10 +496,12 @@
                 spawnParticles(p.x,p.y,ch.color,50,{speed:100,speedVar:80,size:3,sizeVar:5});
                 showNotif(ch.icon+' STOMP','#ff8844');
                 break;
-            case 'crystal': // Mirror shield
-                p.shield = 8;
+            case 'crystal': // Crystal burst - big paint + freeze opponent
+                paintCircle(p.x,p.y,160,p.color);
+                opponent.frozen = 3;
+                if(onlineMode&&socket)socket.emit('power-used',{effect:'frozen',value:3});
                 spawnParticles(p.x,p.y,'#ee44ff',20,{speed:30,speedVar:30});
-                showNotif(ch.icon+' MIROIR','#ee44ff');
+                showNotif(ch.icon+' CRYSTAL','#ee44ff');
                 break;
             case 'nova': // Supernova
                 paintCircle(p.x,p.y,200,p.color);
@@ -568,17 +512,22 @@
         }
     }
 
-    function applyBonus(p,bonusId,bonusIdx) {
+    function applyBonus(p,bonusId,bonusUid) {
         const opponent=players.find(o=>o!==p); const PR=48,margin=PR;
         switch(bonusId){
-            case 'speed':p.speedBoost=BUFF_TIME;break;case 'bomb':paintBomb(p);break;
-            case 'freeze':if(opponent.shield>0){opponent.shield=0;spawnParticles(opponent.x,opponent.y,'#44ee66',15);showNotif('\uD83D\uDEE1\uFE0F BLOQUE !','#44ee66');}else opponent.frozen=BUFF_TIME;break;
-            case 'steal':stealZone(p);break;case 'trail':p.trail=BUFF_TIME;break;
-            case 'shrink':if(opponent.shield>0){opponent.shield=0;spawnParticles(opponent.x,opponent.y,'#44ee66',15);showNotif('\uD83D\uDEE1\uFE0F BLOQUE !','#44ee66');}else opponent.shrunk=BUFF_TIME;break;
-            case 'teleport':spawnParticles(p.x,p.y,'#aa88ff',20);p.x=margin+Math.random()*(W-margin*2);p.y=margin+Math.random()*(H-margin*2);paintCircle(p.x,p.y,50,p.color);spawnParticles(p.x,p.y,'#aa88ff',20);break;
-            case 'shield':p.shield=BUFF_TIME*2;break;
+            case 'speed':p.speedBoost=BUFF_TIME;break;
+            case 'bomb':paintBomb(p);break;
+            case 'freeze':opponent.frozen=BUFF_TIME;break;
+            case 'trail':p.trail=BUFF_TIME;break;
+            case 'shrink':opponent.shrunk=BUFF_TIME;break;
+            case 'teleport':
+                spawnParticles(p.x,p.y,'#aa88ff',20);
+                if(arguments[3]!==undefined){p.x=arguments[3];p.y=arguments[4];}
+                else{p.x=margin+Math.random()*(W-margin*2);p.y=margin+Math.random()*(H-margin*2);}
+                paintCircle(p.x,p.y,50,p.color);spawnParticles(p.x,p.y,'#aa88ff',20);break;
         }
-        if(bonusIdx!==undefined&&bonusIdx>=0&&bonusIdx<bonuses.length){const b=bonuses[bonusIdx];spawnParticles(b.x,b.y,b.type.color,20,{speed:50,speedVar:70});showNotif(b.type.icon+'  '+b.type.desc,b.type.color);bonuses.splice(bonusIdx,1);}
+        const idx=bonuses.findIndex(b=>b.uid===bonusUid);
+        if(idx>=0){const b=bonuses[idx];spawnParticles(b.x,b.y,b.type.color,20,{speed:50,speedVar:70});showNotif(b.type.icon+'  '+b.type.desc,b.type.color);bonuses.splice(idx,1);}
     }
 
     // ===== GAME LOOP =====
@@ -615,13 +564,12 @@
         }
 
         for(const p of players){
-            if(p.speedBoost>0)p.speedBoost-=dt;if(p.frozen>0)p.frozen-=dt;if(p.trail>0)p.trail-=dt;if(p.shrunk>0)p.shrunk-=dt;if(p.shield>0)p.shield-=dt;if(p.cooldown>0)p.cooldown-=dt;if(p.invisible>0)p.invisible-=dt;
+            if(p.speedBoost>0)p.speedBoost-=dt;if(p.frozen>0)p.frozen-=dt;if(p.trail>0)p.trail-=dt;if(p.shrunk>0)p.shrunk-=dt;if(p.cooldown>0)p.cooldown-=dt;if(p.invisible>0)p.invisible-=dt;
             if(onlineMode&&p.color!==myPlayerNum)continue;
             const len=Math.sqrt(p.vx*p.vx+p.vy*p.vy);if(len>0){p.vx/=len;p.vy/=len;}
             let spd=SPEED;if(p.speedBoost>0)spd*=1.9;if(p.frozen>0)spd*=0.3;
             p.prevX=p.x;p.prevY=p.y;p.x+=p.vx*spd*dt;p.y+=p.vy*spd*dt;
             p.x=Math.max(PR,Math.min(W-PR,p.x));p.y=Math.max(PR,Math.min(H-PR,p.y));
-            resolveObstacleCollision(p,PR);
         }
 
         for(const p of players){
@@ -637,10 +585,16 @@
         for(const p of players){
             if(onlineMode&&p.color!==myPlayerNum)continue;
             for(let i=bonuses.length-1;i>=0;i--){const b=bonuses[i];const ddx=p.x-b.x,ddy=p.y-b.y;
-                if(ddx*ddx+ddy*ddy<70*70){applyBonus(p,b.type.id,i);if(onlineMode)socket.emit('bonus-pickup',{playerNum:myPlayerNum,bonusId:b.type.id,bonusIdx:i});break;}}
+                if(ddx*ddx+ddy*ddy<70*70){
+                    const tpx=p.x,tpy=p.y;
+                    applyBonus(p,b.type.id,b.uid);
+                    if(onlineMode)socket.emit('bonus-pickup',{playerNum:myPlayerNum,bonusId:b.type.id,bonusUid:b.uid,tpx:p.x/W,tpy:p.y/H});
+                    break;
+                }}
         }
 
-        if(!onlineMode){
+        // Player-player collision (both local and online)
+        {
             const p1c=players[0],p2c=players[1],cdx=p2c.x-p1c.x,cdy=p2c.y-p1c.y,cdist=Math.sqrt(cdx*cdx+cdy*cdy);
             if(cdist<PR*2&&cdist>0){const ov=PR*2-cdist,nx=cdx/cdist,ny=cdy/cdist,push=ov/2+1;
                 p1c.x-=nx*push;p1c.y-=ny*push;p2c.x+=nx*push;p2c.y+=ny*push;
@@ -648,12 +602,12 @@
                 spawnParticles((p1c.x+p2c.x)/2,(p1c.y+p2c.y)/2,'#fff',6,{speed:30,speedVar:30,life:0.2,size:1,sizeVar:2});}
         }
 
-        if(onlineMode&&socket){const me=players[myPlayerNum-1];socket.emit('pos',{x:me.x/W,y:me.y/H,vx:me.vx,vy:me.vy,speedBoost:me.speedBoost,frozen:me.frozen,trail:me.trail,shrunk:me.shrunk,shield:me.shield,invisible:me.invisible});}
+        if(onlineMode&&socket){const me=players[myPlayerNum-1];socket.emit('pos',{x:me.x/W,y:me.y/H,vx:me.vx,vy:me.vy,speedBoost:me.speedBoost,frozen:me.frozen,trail:me.trail,shrunk:me.shrunk,invisible:me.invisible});}
 
         let c1=0,c2=0,total=GC*GR;
         for(let r=0;r<GR;r++)for(let c=0;c<GC;c++){if(ownership[r][c]===1)c1++;else if(ownership[r][c]===2)c2++;}
         const p1p=(c1/total)*100,p2p=(c2/total)*100;
-        const fxStr=p=>{let s='';if(p.speedBoost>0)s+='\u26A1';if(p.trail>0)s+='\uD83C\uDF1F';if(p.frozen>0)s+='\u2744\uFE0F';if(p.shrunk>0)s+='\uD83D\uDD2E';if(p.shield>0)s+='\uD83D\uDEE1\uFE0F';if(p.invisible>0)s+='\uD83D\uDC7B';return s;};
+        const fxStr=p=>{let s='';if(p.speedBoost>0)s+='\u26A1';if(p.trail>0)s+='\uD83C\uDF1F';if(p.frozen>0)s+='\u2744\uFE0F';if(p.shrunk>0)s+='\uD83D\uDD2E';if(p.invisible>0)s+='\uD83D\uDC7B';return s;};
         document.getElementById('score1').innerHTML=`J1: ${p1p.toFixed(1)}%<span class="effect-icons">${fxStr(players[0])}</span>`;
         document.getElementById('score2').innerHTML=`J2: ${p2p.toFixed(1)}%<span class="effect-icons">${fxStr(players[1])}</span>`;
         document.getElementById('bar1').style.width=p1p+'%';document.getElementById('bar2').style.width=p2p+'%';
@@ -662,32 +616,12 @@
     function draw() {
         ctx.drawImage(bgCanvas,0,0);
 
-        // Obstacles
-        for (const o of (obstacles||[])) {
-            // Outer glow
-            ctx.save();
-            ctx.shadowColor = 'rgba(160,120,255,0.5)'; ctx.shadowBlur = 18;
-            const g = ctx.createLinearGradient(o.x,o.y,o.x+o.w,o.y+o.h);
-            g.addColorStop(0,'#4a3a7a'); g.addColorStop(1,'#3a2a6a');
-            ctx.fillStyle = g; ctx.beginPath();
-            ctx.roundRect(o.x,o.y,o.w,o.h,8); ctx.fill();
-            ctx.restore();
-            ctx.strokeStyle = 'rgba(200,170,255,0.6)'; ctx.lineWidth = 2.5;
-            ctx.beginPath(); ctx.roundRect(o.x,o.y,o.w,o.h,8); ctx.stroke();
-            // Inner highlight
-            ctx.fillStyle = 'rgba(200,170,255,0.08)';
-            ctx.beginPath(); ctx.roundRect(o.x+3,o.y+3,o.w-6,o.h-6,6); ctx.fill();
-        }
-
         ctx.save();ctx.globalAlpha=0.85;ctx.drawImage(layer1,0,0);ctx.globalCompositeOperation='source-atop';ctx.fillStyle=COLOR1_L;ctx.fillRect(0,0,W,H);ctx.restore();
         ctx.drawImage(bgCanvas,0,0);
         ctx.save();ctx.globalCompositeOperation='source-over';
         drawColoredLayer(lctx1,layer1,['#ff8fa3','#ff7088','#ffa0b3'],1);
         drawColoredLayer(lctx2,layer2,['#7dd3ff','#68c4f0','#92dfff'],2);
         ctx.restore();
-
-        // Draw obstacles on top of paint
-        for(const o of(obstacles||[])){ctx.save();ctx.shadowColor='rgba(160,120,255,0.5)';ctx.shadowBlur=18;const g=ctx.createLinearGradient(o.x,o.y,o.x+o.w,o.y+o.h);g.addColorStop(0,'#4a3a7a');g.addColorStop(1,'#3a2a6a');ctx.fillStyle=g;ctx.beginPath();ctx.roundRect(o.x,o.y,o.w,o.h,8);ctx.fill();ctx.restore();ctx.strokeStyle='rgba(200,170,255,0.6)';ctx.lineWidth=2.5;ctx.beginPath();ctx.roundRect(o.x,o.y,o.w,o.h,8);ctx.stroke();}
 
         for(const pt of particles){const a=Math.min(1,pt.life*2.5);ctx.globalAlpha=a;ctx.fillStyle=pt.color;ctx.beginPath();ctx.arc(pt.x,pt.y,pt.size*(0.5+a*0.5),0,Math.PI*2);ctx.fill();}
         ctx.globalAlpha=1;
@@ -713,7 +647,6 @@
             ctx.translate(p.x,p.y);if(ms>0.5){ctx.rotate(ma);ctx.scale(stretch,squash);ctx.rotate(-ma);}
             if(p.speedBoost>0){ctx.strokeStyle='rgba(255,221,0,0.5)';ctx.lineWidth=3;ctx.setLineDash([6,4]);ctx.lineDashOffset=globalTime*40;ctx.beginPath();ctx.arc(0,0,PR+10,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.lineDashOffset=0;}
             if(p.trail>0){ctx.fillStyle='rgba(255,170,0,0.12)';ctx.beginPath();ctx.arc(0,0,42,0,Math.PI*2);ctx.fill();}
-            if(p.shield>0){ctx.strokeStyle='rgba(68,238,102,0.6)';ctx.lineWidth=3;ctx.setLineDash([8,4]);ctx.lineDashOffset=-globalTime*20;ctx.beginPath();ctx.arc(0,0,PR+8,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.lineDashOffset=0;}
             if(p.frozen>0){const fg=ctx.createRadialGradient(0,0,PR*0.5,0,0,PR+14);fg.addColorStop(0,'rgba(0,238,255,0)');fg.addColorStop(0.7,'rgba(0,238,255,0.15)');fg.addColorStop(1,'rgba(0,238,255,0.35)');ctx.fillStyle=fg;ctx.beginPath();ctx.arc(0,0,PR+14,0,Math.PI*2);ctx.fill();}
             ctx.fillStyle='rgba(0,0,0,0.4)';ctx.beginPath();ctx.ellipse(3,5,PR*0.9,PR*0.5,0,0,Math.PI*2);ctx.fill();
             const bg=ctx.createRadialGradient(-PR*0.25,-PR*0.25,0,0,0,PR);if(p.frozen>0){bg.addColorStop(0,'#b8ddf0');bg.addColorStop(1,'#5a99bb');}else{bg.addColorStop(0,colL);bg.addColorStop(1,colD);}
@@ -793,11 +726,11 @@
         socket.on('room-created',code=>{myPlayerNum=1;isHost=true;document.getElementById('createStatus').innerHTML=`<div class="room-code">${code}</div><p class="lobby-status waiting">En attente d'un adversaire</p>`;});
         socket.on('room-joined',()=>{myPlayerNum=2;isHost=false;});
         socket.on('join-error',msg=>document.getElementById('joinError').textContent=msg);
-        socket.on('game-start',(data)=>{onlineMode=true;hideAll();document.getElementById('gameArea').classList.add('visible');init();if(data&&data.obstacles){obstacles=data.obstacles;}});
-        socket.on('sync-obstacles',(data)=>{if(data&&data.obstacles){obstacles=data.obstacles;}});
-        socket.on('pos',data=>{if(!players)return;const other=players[myPlayerNum===1?1:0];other.prevX=other.x;other.prevY=other.y;other.x=data.x*W;other.y=data.y*H;other.vx=data.vx;other.vy=data.vy;other.speedBoost=data.speedBoost;other.frozen=data.frozen;other.trail=data.trail;other.shrunk=data.shrunk;other.shield=data.shield;other.invisible=data.invisible||0;});
+        socket.on('game-start',()=>{onlineMode=true;hideAll();document.getElementById('gameArea').classList.add('visible');init();});
+        socket.on('pos',data=>{if(!players)return;const other=players[myPlayerNum===1?1:0];other.prevX=other.x;other.prevY=other.y;other.x=data.x*W;other.y=data.y*H;other.vx=data.vx;other.vy=data.vy;other.speedBoost=data.speedBoost;other.frozen=data.frozen;other.trail=data.trail;other.shrunk=data.shrunk;other.invisible=data.invisible||0;other.cooldown=data.cooldown||0;});
         socket.on('bonus-spawn',data=>spawnBonus(data));
-        socket.on('bonus-pickup',data=>{if(!players)return;applyBonus(players[data.playerNum-1],data.bonusId,data.bonusIdx);});
+        socket.on('bonus-pickup',data=>{if(!players)return;const p=players[data.playerNum-1];applyBonus(p,data.bonusId,data.bonusUid,data.tpx!==undefined?data.tpx*W:undefined,data.tpy!==undefined?data.tpy*H:undefined);});
+        socket.on('power-used',data=>{if(!players)return;const other=players[myPlayerNum===1?1:0];const me=players[myPlayerNum-1];if(data.effect==='frozen')me.frozen=data.value;if(data.effect==='shrunk')me.shrunk=data.value;if(data.effect==='pushX'){me.x=data.value*W;me.y=data.valueY*H;}});
         socket.on('opponent-left',()=>{showNotif('Adversaire deconnecte','#ff5555');setTimeout(()=>{if(animId)cancelAnimationFrame(animId);animId=null;showScreen('menuScreen');},2000);});
     }
     document.getElementById('createBtn').addEventListener('click',()=>{if(socket)socket.emit('create-room');});
